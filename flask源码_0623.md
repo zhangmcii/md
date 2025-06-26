@@ -93,7 +93,7 @@ Flask类中的请求上下文函数
 
 ### 上下文是如何工作的？
 
-处理每个请求时都会调用Flask.wsgi_app()方法，他在请求期间管理上下文。当上下文被压入堆栈时，依赖它们的代理时可用的，并指向堆栈顶部项目的信息。
+处理每个请求时都会调用Flask.wsgi_app()方法，他在请求期间管理上下文。当上下文被压入堆栈时，依赖它们的代理是可用的，并指向堆栈顶部项目的信息。
 
 当请求开始时，将创建并推送Request Context，如果该应用 程序的上下文尚不是顶级上下文，则该请求会首先创建并推送 AppContext 。在推送这些上下文时，current_app、g、request和session代理可用于处理请求的 原始线程。
 
@@ -156,12 +156,12 @@ Flask 通过 *应用上下文* 解决了这个问题。不是直接引用一�
 
 ## 手动推送上下文：
 
-如果尝试在应用上下文之外访问 [`current_app`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.current_app "flask.current_app") ，或其他任何使用它的东 西，则会看到以下错误消息：
+如果尝试在应用上下文之外访问 [`current_app`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.current_app "flask.current_app") ，或其他任何使用它的东西，则会看到以下错误消息：
 
-RuntimeError: Working outside of application context.
+    RuntimeError: Working outside of application context.
 
 这通常意味着您试图使用功能需要以某种方式与当前的应用程序对象进行交
-互。要解决这个问题，请使用 app.app_context（）设置应用上下文。
+互。要解决这个问题，请使用 app.app_context()设置应用上下文。
 
 比如：使用flask_mail扩展来发送邮件，执行mail.send(msg)时，需要使用
 
@@ -236,9 +236,7 @@ RuntimeError: Working outside of application context.
 
 代理对象的指向堆栈顶部项目的信息：线程1中的request指向RequestCtx_A，线程2中的request指向RequestCtx_B，以此类推。
 
-> 注意，在Flask中，Local类的实例是全局共享的，它内部维护的存储是**按线程 / 协程隔离**的。
-> 
-> 这是理解上下文机制的关键。
+> 注意，在Flask中，Local类的实例是全局共享的，它内部维护的存储是**按线程 / 协程隔离**的。这是理解上下文机制的关键。
 > 
 > **源码证据**：
 > 
@@ -258,3 +256,20 @@ RuntimeError: Working outside of application context.
 3.线程 1 无法访问线程 2 的上下文，确保了请求数据的隔离性。
 
 4.当线程处理完请求后，上下文栈弹出，线程可以被复用处理其他请求（此时会创建新的上下文）。
+
+| 上下文   | 用途                                          | 针对的问题                                            | 生命周期                                | 可访问的代理对象         | 上下文外访问代理对象                                                    | 手动推送上下文                                                  |
+| ----- | ------------------------------------------- | ------------------------------------------------ | ----------------------------------- | ---------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
+| 请求上下文 | 将request代理作为全局变量，供请求期间运行的视图函数，错误处理器，其他函数访问。 | 1.避免将请求对象作为函数参数，传递给请求期间运行的每个函数。                  | 与单个 HTTP 请求绑定，请求开始时创建，请求结束时销毁。      | request, session | 会收到错误消息：RuntimeError: Working outside of request context.     | 1.使用 `测试客户端`来模拟完整的请求.      2.with test_request_context() |
+| 应用上下文 | 使用current_app代理，供请求期间运行的视图函数，错误处理器，其他函数访问。  | 1.在模块中导入app实例导致的循环引入问题。2.在使用应用工厂方案时根本就没有app实例导入。 | 隐式创建（伴随请求上下文）。通常应用上下文将具有与请求相同的生命周期。 | current_app, g   | 会收到错误消息：RuntimeError: Working outside of application context. | with app.app_context():                                  |
+
+当flask应用接受到一个请求时，请求上下文和应用上下文创建的顺序是什么？
+
+1. **创建请求上下文**（但未入栈）。
+2. **检查应用上下文**：
+   - 若不存在，则创建应用上下文并**压入应用栈**。
+3. **压入请求上下文**到请求栈。
+4. **处理请求**（执行视图函数等）。
+5. **弹出请求上下文**。
+6. **弹出应用上下文**（如果是隐式创建的）。
+
+综上： 应用上下文入栈 → 请求上下文入栈 → 请求上下文弹出 → 应用上下文弹出
