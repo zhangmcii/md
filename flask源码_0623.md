@@ -127,6 +127,12 @@ WSGI =  WSGI 服务器 + WSGI 应用框架 ， Flask 是一个 WSGI 应用框架
 7. WSGI 服务器创建并发送 HTTP 响应。
 
 8. 客户端接收 HTTP 响应。
+   
+   
+
+步骤4,5,6就是对应Flask.wsgi_app()函数
+
+
 
 # 中间件
 
@@ -274,10 +280,6 @@ Flask 通过 *应用上下文* 解决了这个问题。不是直接引用一�
 
 综上： 应用上下文入栈 → 请求上下文入栈 → 请求上下文弹出 → 应用上下文弹出
 
-
-
-
-
 # 蓝图
 
 ### 错误处理器：
@@ -289,8 +291,6 @@ Flask 通过 *应用上下文* 解决了这个问题。不是直接引用一�
 - @蓝图.app_errorhandler()
   作用范围：处理整个应用的错误，无论错误发生在哪个蓝图或路由中。  
   应用场景：当需要在蓝图中注册一个全局错误处理函数时使用。
-
-
 
 ### 为什么要使用蓝图？
 
@@ -306,17 +306,13 @@ Flask 通过 *应用上下文* 解决了这个问题。不是直接引用一�
 
 - 当初始化一个 Flask 扩展时，为以上任意一种用途注册一个蓝图。
 
-
-
 Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正的应用，而是一套可以注册在应用中的操作，并且可以注册多次
 
-缺点： 一旦应用被创建后，只有销毁整个应用对象才能注 销蓝图。
-
-
+缺点： 一旦应用被创建后，只有销毁整个应用对象才能注销蓝图。
 
 #### 基本概念：
 
-在蓝图被注册到应用之后，所要执行的操作的集合。当分配请求时， Flask 会把蓝图和视图函数关联起来，并生成两个端点之间的 URL 。
+在蓝图被注册到应用之后，所要执行的操作的集合。当分配请求时， Flask 会把蓝图和视图函数关联起来，并生成两个端点之间的 URL。
 
 ### 操作实例
 
@@ -338,8 +334,6 @@ Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正�
     app = Flask(__name__)
     app.register_blueprint(simple_page, url_prefix='main')
 
-
-
 ### 蓝图资源
 
 蓝图还可以用于提供资源。有时候，我们仅仅是为了使用一些资源而使用蓝图。
@@ -347,3 +341,109 @@ Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正�
 ### 蓝图资源文件夹
 
 和普通应用一样，蓝图一般都放在一个文件夹中。虽然多个蓝图可以共存于同一 个文件夹中，但是最好不要这样做。
+
+
+
+
+
+
+
+### 综合实战问题：从程序开始运行，第一个请求进入，再到返回生成的响应的过程
+
+
+
+当WSGI服务器接收到请求时，会调用Flask程序实例app。Flask类实现了__call__()方法，当程序实例被调用时会执行这个方法，而这个方法内部调用了Flask.wsgi_app()方法
+
+> 这里将WSGI程序实现在单独的方法中，而不是直接实现在__call__()方法中，主要是为了在方便附加中间件的同时保留对程序实例的引用。
+
+```python
+  def __call__(self, environ, start_response):
+        return self.wsgi_app(environ, start_response)
+  
+  
+  def wsgi_app(self, environ, start_response):
+        ctx = self.request_context(environ)
+        error = None
+        try:
+            try:
+                ctx.push()
+                response = self.full_dispatch_request()
+            except Exception as e:
+                error = e
+                response = self.handle_exception(e)
+            except:
+                error = sys.exc_info()[1]
+                raise
+            return response(environ, start_response)
+        finally:
+            if self.should_ignore_error(error):
+                error = None
+            ctx.auto_pop(error)
+```
+
+  wsgi_app()方法中的try...except...语句是重点。它首先尝试从Flask.full_dispatch_request()方法获取响应，如果出错那么就根据错误类型来生成错误响应。
+
+#### 请求进入
+
+Flask.full_dispatch_request()负责`完整地请求调度`。
+
+```python
+ def full_dispatch_request(self):
+        self.try_trigger_before_first_request_functions()
+        try:
+            request_started.send(self)
+            rv = self.preprocess_request()
+            if rv is None:
+                rv = self.dispatch_request()
+        except Exception as e:
+            rv = self.handle_user_exception(e)
+        return self.finalize_request(rv)
+```
+
+1.preprocess_request()方法对请求进行预处理(request preprocessing)，这会执行所有使用before_request钩子注册的函数。
+
+2.接着，请求分发的工作会进一步交给dispatch_request()方法，它会匹配并调用对应的视图函数，获取其返回值，在这里赋值给rv，
+
+3.最后，接收视图函数返回值的finalize_request()会使用这个值来生成响应。
+
+
+
+#### 响应返回
+
+接收到视图函数返回值的finalize_request()函数负责生成响应，即请求的最终处理
+
+```python
+    def finalize_request(self, rv, from_error_handler=False):
+        response = self.make_response(rv)
+        try:
+            response = self.process_response(response)
+            request_finished.send(self, response=response)
+        except Exception:
+            if not from_error_handler:
+                raise
+            self.logger.exception('Request finalizing failed with an '
+                                  'error while handling an error')
+        return response
+```
+
+
+
+1.这里使用Flask类中的make_response()方法生成响应对象，但这个make_response并不是我们从flask导入并在视图函数中生成响应对象的make_response 。
+
+> 我们平时使用的make_response是helpers模块中的make_response()函数，它对传入的参数进行简单处理，然后把参数传递给Flask类的make_response方法并返回
+
+2.除了创建响应对象，这段代码主要调用了process_response()方法处理响应。这个响应处理方法会在把响应发送给WSGI服务器前执行所有使用after_request钩子注册的函数。另外，这个方法还会根据session对象来设置cookie
+
+3.返回作为响应的response后，代码执行流程就回到了wsgi_app()方法，最后返回响应对象，WSGI服务器接收这个响应对象，并把它转换成HTTP响应报文发送给客户端。
+
+
+
+总结上面：请求进入，wsgi服务器调用应用程序实例app。Flask类实现了__call__()方法，当程序实例app被调用时会执行这个方法，而这个方法内部调用了wsgi_app()方法。
+
+推送请求上下文，接着执行full_dispatch_request()，它负责`完整地请求调度`，包括请求的预处理，分配到视图函数，将视图函数返回转换为 WSGI 响应数据。最后wgsi_app()函数将响应对象传递给 WSGI 服务器生产成响应，WSGI 服务器创建并发送 HTTP 响应到客户端。
+
+
+
+
+
+详情： 路由处理、请求和响应对象的封装
