@@ -127,12 +127,8 @@ WSGI =  WSGI 服务器 + WSGI 应用框架 ， Flask 是一个 WSGI 应用框架
 7. WSGI 服务器创建并发送 HTTP 响应。
 
 8. 客户端接收 HTTP 响应。
-   
-   
 
 步骤4,5,6就是对应Flask.wsgi_app()函数
-
-
 
 # 中间件
 
@@ -344,13 +340,7 @@ Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正�
 
 
 
-
-
-
-
 ### 综合实战问题：从程序开始运行，第一个请求进入，再到返回生成的响应的过程
-
-
 
 当WSGI服务器接收到请求时，会调用Flask程序实例app。Flask类实现了__call__()方法，当程序实例被调用时会执行这个方法，而这个方法内部调用了Flask.wsgi_app()方法
 
@@ -359,8 +349,8 @@ Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正�
 ```python
   def __call__(self, environ, start_response):
         return self.wsgi_app(environ, start_response)
-  
-  
+
+
   def wsgi_app(self, environ, start_response):
         ctx = self.request_context(environ)
         error = None
@@ -406,8 +396,6 @@ Flask.full_dispatch_request()负责`完整地请求调度`。
 
 3.最后，接收视图函数返回值的finalize_request()会使用这个值来生成响应。
 
-
-
 #### 响应返回
 
 接收到视图函数返回值的finalize_request()函数负责生成响应，即请求的最终处理
@@ -426,8 +414,6 @@ Flask.full_dispatch_request()负责`完整地请求调度`。
         return response
 ```
 
-
-
 1.这里使用Flask类中的make_response()方法生成响应对象，但这个make_response并不是我们从flask导入并在视图函数中生成响应对象的make_response 。
 
 > 我们平时使用的make_response是helpers模块中的make_response()函数，它对传入的参数进行简单处理，然后把参数传递给Flask类的make_response方法并返回
@@ -440,10 +426,180 @@ Flask.full_dispatch_request()负责`完整地请求调度`。
 
 总结上面：请求进入，wsgi服务器调用应用程序实例app。Flask类实现了__call__()方法，当程序实例app被调用时会执行这个方法，而这个方法内部调用了wsgi_app()方法。
 
-推送请求上下文，接着执行full_dispatch_request()，它负责`完整地请求调度`，包括请求的预处理，分配到视图函数，将视图函数返回转换为 WSGI 响应数据。最后wgsi_app()函数将响应对象传递给 WSGI 服务器生产成响应，WSGI 服务器创建并发送 HTTP 响应到客户端。
+推送请求上下文，接着执行full_dispatch_request()，它负责`完整地请求调度`，包括请求的预处理，分配到视图函数，将视图函数返回转换为 WSGI 响应数据。最后wgsi_app()函数将响应对象传递给 WSGI 服务器生产成响应。
 
 
 
 
 
-详情： 路由处理、请求和响应对象的封装
+### 详情： 路由处理、请求和响应对象的封装
+
+#### 路由：
+
+url规则--端点--视图函数
+
+
+
+##### 注册路由：
+
+route装饰器的内部调用了add_url_rule()来添加URL规则，所以注册路由也可以直接使用add_url_rule实现。
+
+```python
+    def add_url_rule(self, rule, endpoint=None, view_func=None,
+                     provide_automatic_options=None, **options):
+        # 设置方法和端点
+        ...
+        ...
+        rule = self.url_rule_class(rule, methods=methods, **options)
+        rule.provide_automatic_options = provide_automatic_options
+
+        self.url_map.add(rule)
+        if view_func is not None:
+            old_func = self.view_functions.get(endpoint)
+            if old_func is not None and old_func != view_func:
+                raise AssertionError('View function mapping is overwriting an '
+                                     'existing endpoint function: %s' % endpoint)
+            self.view_functions[endpoint] = view_func
+```
+
+
+
+重点在于这两行：
+
+self.url_map.add(rule)
+self.view_functions[endpoint] = view_func
+
+
+
+
+
+url_map是Werkzeug的Map类实例，它存储了URL规则和相关配置
+
+rule是Werkzeug提供的Rule实例，其中保存了端点和URL规则的映射关系。
+
+view_functions则是Flask类中定义的一个字典，它存储了端点和视图函数的映射关系
+
+
+
+你可以发现端点是如何作为中间人连接起URL规则和视图函数的。前者存储了URL到端点的映射关系，后者则存储了端点和视图函数的映射关系
+
+
+
+##### url匹配：
+
+在Werkzeug中进行URL匹配
+
+Map.bind()方法和Map.bind_to_environ()都会返回一个MapAdapter对象，它负责匹配和构建URL。
+
+MapAdapter类的match()方法用来判断传入的URL是否匹配Map对象中存储的路由规则, 匹配成功后会返回一个包含URL端点和URL变量的元组。
+
+> 设置return_rule=True可以在匹配成功后返回表示URL规则的Rule类实例。这个Rule实例包含endpoint属性，存储着匹配成功的端点值。
+
+
+
+MapAdapter类的build()方法用于创建URL，我们用来生成URL的url_for()函数内部就是通过build()方法实现的。
+
+
+
+**实际问题**：客户端发送请求时，Flask是如何根据请求的URL找到对应的视图函数的？
+
+
+
+在上一节分析Flask中的请求响应循环时，我们曾说过，请求的处理最终交给了dispatch_request()方法。
+
+```python
+ def dispatch_request(self):
+        req = _request_ctx_stack.top.request
+        if req.routing_exception is not None:
+            self.raise_routing_exception(req)
+        rule = req.url_rule
+  
+        if getattr(rule, 'provide_automatic_options', False) \
+           and req.method == 'OPTIONS':
+            return self.make_default_options_response()
+        
+        return self.view_functions[rule.endpoint](**req.view_args)
+```
+
+dispatch_request()： 实现了从请求的URL找到端点，再从端点找到对应的视图函数并调用的过程
+
+
+
+在注册路由时，由Rule类表示的rule对象由route()装饰器传入的参数创建。而这里则直接从请求上下文对象(_request_ctx_stack.top.request)的url_rule属性获取。可以得知，URL的匹配工作在请求上下文对象中实现。
+
+> 创建请求上下文时，会将rule对象保存在 req.rule_map属性中，rule实例保存着该请求对应的端点。
+
+```python
+class RequestContext(object):
+  
+    def __init__(self, app, environ, request=None):
+        self.app = app
+        if request is None:
+            request = app.request_class(environ)
+        self.request = request
+        self.url_adapter = app.create_url_adapter(self.request)
+        ...
+        # 匹配请求到对应的视图函数
+        self.match_request()  
+
+    def match_request(self):
+        try:
+            url_rule, self.request.view_args = \
+                self.url_adapter.match(return_rule=True)
+            self.request.url_rule = url_rule
+        except HTTPException as e:
+            self.request.routing_exception = e
+```
+
+可以看到url_rule属性就在这个方法中创建。match_request()方法调用了self.url_adapter.match(return_rule=True)来获取url_rule和view_args
+
+
+
+```python
+class Flask(_PackageBoundObject):
+    ...
+    def create_url_adapter(self, request):
+        if request is not None:
+            # 如果子域名匹配处于关闭状态（默认值）
+            # 就在各处使用默认的子域名
+            subdomain = ((self.url_map.default_subdomain or None)
+                         if not self.subdomain_matching else None)
+            return self.url_map.bind_to_environ(
+                request.environ,
+                server_name=self.config['SERVER_NAME'],
+                subdomain=subdomain)
+
+        if self.config['SERVER_NAME'] is not None:
+            return self.url_map.bind(
+                self.config['SERVER_NAME'],
+                script_name=self.config['APPLICATION_ROOT'],
+                url_scheme=self.config['PREFERRED_URL_SCHEME'])
+```
+
+我们知道url_map属性是一个Map对象，可以看出它最后调用了bind()或bind_to_environ()方法，最终会返回一个MapAdapter类实例。
+
+match_request()方法通过调用MapAdapter.match()方法来匹配请求URL，设置return_rule=True可以在匹配成功后返回表示URL规则的Rule类实例。这个Rule实例包含endpoint属性，存储着匹配成功的端点值。
+
+
+
+在dispatch_request()最后这一行代码中，通过在view_functions字典中根据端点作为键即可找到对应的视图函数对象，并调用它：
+
+```Python
+self.view_functions[rule.endpoint](**req.view_args)
+```
+
+这时代码执行流程才终于走到视图函数中。
+
+
+
+`总结`：
+
+所以，当你启动Flask应用程序时，会将route装饰器修饰的视图函数,放在url_map的Map实例中，保存着url规则和端点的对应关系，view_functions变量保存着端点和视图函数的对应关系。
+
+当请求进入时，在创建请求上下文过程中，会通过Flask.create_url_adapter()方法调用bind()或bind_to_environ()方法，返回一个MapAdapter类实例;最后调用match_request()返回表示URL规则的Rule类实例, 这个Rule实例包含endpoint属性，存储着匹配成功的端点值。
+
+在dispatch_request顺利通过当前请求上下文变量 req获得该请求对应的端点，再从view_functions字典中以端点为键找到对应的视图函数并调用。
+
+
+
+至此，Flask完成了根据请求的URL找到对应的视图函数，并调用该视图函数的过程。
