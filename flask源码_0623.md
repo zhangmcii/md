@@ -54,7 +54,23 @@ Flask类中的请求上下文函数
 
 ### 生命周期
 
-当 Flask 应用开始处理请求时，它会推送请求上下文，这也会推送应用上下文。当请求结束时，它会弹出请求上下文，然后弹出应用程序上下文。
+当 Flask 应用开始处理请求时，它会推送请求上下文，这也会推送应用上下文。当请求结束时，它会弹出请求上下文，然后弹出应用上下文。
+
+### 开始与结束
+
+请求上下文在Flask类的wsgi_app方法的开头创建，结尾调用了auto_pop()方法来移除。也就是说，请求上下文的生命周期开始于请求进入调用wsgi_app()时，结束于响应生成后。
+
+```python
+ def wsgi_app(self, environ, start_response):
+        ctx = self.request_context(environ)
+        error = None
+        try:
+           ...
+        finally:
+            if self.should_ignore_error(error):
+                error = None
+            ctx.auto_pop(error)
+```
 
 #### 顺序总结
 
@@ -97,7 +113,11 @@ Flask类中的请求上下文函数
 
 当请求开始时，将创建并推送Request Context，如果该应用 程序的上下文尚不是顶级上下文，则该请求会首先创建并推送 AppContext 。在推送这些上下文时，current_app、g、request和session代理可用于处理请求的 原始线程。
 
-在分派请求并生成和发送响应之后，会弹出请求上下文，然后弹出应用上下文。在 紧临弹出之前，会执行 [`teardown_request()`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.Flask.teardown_request "flask.Flask.teardown_request") 和 [`teardown_appcontext()`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.Flask.teardown_appcontext "flask.Flask.teardown_appcontext") 函数。即使在调度期间发生未处理的异 常，也会执行这些函数。
+在分派请求并生成和发送响应之后，会弹出请求上下文，然后弹出应用上下文。在 紧临弹出之前(在pop()方法中调用的)，会执行 [`teardown_request()`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.Flask.teardown_request "flask.Flask.teardown_request") 和 [`teardown_appcontext()`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.Flask.teardown_appcontext "flask.Flask.teardown_appcontext") 函数。即使在调度期间发生未处理的异 常，也会执行这些函数。
+
+
+
+
 
 ### 关于代理
 
@@ -108,35 +128,7 @@ Flask 提供的一些对象是其他对象的代理。每个工作线程都能�
     app = current_app._get_current_object()
     my_signal.send(app)
 
-# 应用程序生命周期
 
-WSGI =  WSGI 服务器 + WSGI 应用框架 ， Flask 是一个 WSGI 应用框架。
-
-1. 浏览器或其他客户端发出 HTTP 请求。
-
-2. WSGI 服务器接收请求。
-
-3. WSGI 服务器将 HTTP 数据转换为 WSGI `environ` 字典。
-
-4. WSGI服务器使用 `environ` 调用 WSGI 应用程序。
-
-5. Flask ,即 WSGI 应用程序，执行其所有内部处理来路由请求到视图函数， 处理错误等。
-
-6. Flask 将视图函数返回转换为 WSGI 响应数据，并将其传递给 WSGI 服务器。
-
-7. WSGI 服务器创建并发送 HTTP 响应。
-
-8. 客户端接收 HTTP 响应。
-
-步骤4,5,6就是对应Flask.wsgi_app()函数
-
-# 中间件
-
- WSGI 应用(Flask)是以某种方式运行的可调用对象。
-
-中间件是一个 WSGI 应用程序，它包装了另一个 WSGI 应用程序，它类似于 Python 装饰器。最外层的中间件将由服务器调用。它可以修改传递给它的数据，然后调用被它包装 WSGI 应用程序（或进一步的中间件），以此类推。它可以获取该调用的返回值并进一步修改它。
-
-从 WSGI 服务器的角度来看，只有一个直接调用的 WSGI 应用程序。通常， Flask 是中间件链末端的“真正”应用程序。但即使是 Flask 也可以调用进一 步的 WSGI 应用程序，尽管这是一个高级、不常见的用例。
 
 # 应用上下文：
 
@@ -220,7 +212,107 @@ Flask 通过 *应用上下文* 解决了这个问题。不是直接引用一�
 
 2.应用上下文具有与请求相同的生命周期。
 
-    
+
+
+# 应用程序生命周期
+
+WSGI = WSGI 服务器 + WSGI 应用框架 ， Flask 是一个 WSGI 应用框架。
+
+1. 浏览器或其他客户端发出 HTTP 请求。
+
+2. WSGI 服务器接收请求。
+
+3. WSGI 服务器将 HTTP 数据转换为 WSGI `environ` 字典。
+
+4. WSGI服务器使用 `environ` 调用 WSGI 应用程序。
+
+5. Flask ,即 WSGI 应用程序，执行其所有内部处理来路由请求到视图函数， 处理错误等。
+
+6. Flask 将视图函数返回转换为 WSGI 响应数据，并将其传递给 WSGI 服务器。
+
+7. WSGI 服务器创建并发送 HTTP 响应。
+
+8. 客户端接收 HTTP 响应。
+
+步骤4,5,6就是对应Flask.wsgi_app()函数
+
+# 中间件
+
+WSGI 应用(Flask)是以某种方式运行的可调用对象。
+
+中间件是一个 WSGI 应用程序，它包装了另一个 WSGI 应用程序，它类似于 Python 装饰器。最外层的中间件将由服务器调用。它可以修改传递给它的数据，然后调用被它包装 WSGI 应用程序（或进一步的中间件），以此类推。它可以获取该调用的返回值并进一步修改它。
+
+从 WSGI 服务器的角度来看，只有一个直接调用的 WSGI 应用程序。通常， Flask 是中间件链末端的“真正”应用程序。但即使是 Flask 也可以调用进一 步的 WSGI 应用程序，尽管这是一个高级、不常见的用例。
+
+
+
+这个特性经常被用来解耦程序的功能，这样可以将不同功能分开维护，达到分层的目的
+
+
+
+#### 中间件实战：
+
+使用类定义的中间件必须实现__call__方法，接收environ和start_response对象作为参数，最后调用传入的可调用对象，并传递这两个参数。如下样板代码：
+
+```python
+class MyMiddleware(object):
+    def __call__(self, environ, start_response):
+        pass
+    pass
+
+app = Flask(__name__)
+# 如果我们自己实现了中间件，那么最佳的方式是嵌套在FLask的wsgi_app对象上
+app.wsgi_app = MyMiddleware(app.wsgi_app)
+```
+
+下面这个MyMiddleware中间件其实并没有做什么，只是向首部添加了一个无意义的自定义字段。最后传入可调用对象hello函数来实例化这个中间件（这里的hello函数相当于Flask的可调用对象wsgi_app），获得包装后的程序实例wrapped_app。
+
+```python
+from wsgiref.simple_server import make_server
+
+def hello(environ, start_response):
+    status = '200 OK'
+    response_headers = [('Content-type', 'text/html')]
+    start_response(status, response_headers)
+    return [b'<h1>Hello, web!</h1>']
+
+class MyMiddleware(object):
+    def __init__(self, app):
+        self.app = app
+ 
+    def __call__(self, environ, start_response):
+        def custom_start_response(status, headers, exc_info=None):
+            headers.append(('A-CUSTOM-HEADER', 'Nothing'))
+            return start_response(status, headers)
+ 
+        return self.app(environ, custom_start_response)
+
+wrapped_app = MyMiddleware(hello)
+server = make_server('localhost', 5000, wrapped_app)
+server.serve_forever()
+```
+
+注意：
+
+- socketio.run(wrapped_app, host=os.getenv('FLASK_RUN_HOST'), port=os.getenv('FLASK_RUN_PORT') ) 会报错。
+
+- 用 socketio.run() 时，传入 app，不要传入中间件对象。
+
+- 如需中间件和 socketio 共存，请考虑用 Flask 的 before_request/after_request 钩子 或 Flask 插件 实现你的功能。
+
+- 需要中间件时，建议用专业 WSGI 服务器部署
+
+
+
+# 扩展
+
+扩展和我们编写的程序很相似。事实上，Flask扩展就是Python库，只不过它使用“Flask的语言”说话。比如，它也像我们的程序一样使用Flask提供的诸多功能：它们可以创建蓝本，获取配置，加载静态文件，使用上下文全局变量
+
+Flask扩展通常分为两类：一类是纯功能的实现，比如提供用户认证功能的Flask-Login；另一类是对已有的库和工具的包装，比如Flask-SQLAlchemy就包装了SQLAlchemy
+
+
+
+
 
 ### 综合实战问题： 多线程场景下的上下文管理
 
@@ -342,7 +434,7 @@ Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正�
 
 ### 综合实战问题：从程序开始运行，第一个请求进入，再到返回生成的响应的过程
 
-当WSGI服务器接收到请求时，会调用Flask程序实例app。Flask类实现了__call__()方法，当程序实例被调用时会执行这个方法，而这个方法内部调用了Flask.wsgi_app()方法
+当WSGI服务器接收到请求时，会调用Flask应用程序实例app。Flask类实现了__call__()方法，当程序实例被调用时会执行这个方法，而这个方法内部调用了Flask.wsgi_app()方法
 
 > 这里将WSGI程序实现在单独的方法中，而不是直接实现在__call__()方法中，主要是为了在方便附加中间件的同时保留对程序实例的引用。
 
@@ -424,11 +516,9 @@ Flask.full_dispatch_request()负责`完整地请求调度`。
 
 
 
-总结上面：请求进入，wsgi服务器调用应用程序实例app。Flask类实现了__call__()方法，当程序实例app被调用时会执行这个方法，而这个方法内部调用了wsgi_app()方法。
-
-推送请求上下文，接着执行full_dispatch_request()，它负责`完整地请求调度`，包括请求的预处理，分配到视图函数，将视图函数返回转换为 WSGI 响应数据。最后wgsi_app()函数将响应对象传递给 WSGI 服务器生产成响应。
-
-
+>  总结上面：
+> 
+> 请求进入，wsgi服务器调用应用程序实例app。Flask类实现了__call__()方法，当程序实例app被调用时会执行这个方法，而这个方法内部调用了wsgi_app()方法。推送请求上下文，接着执行full_dispatch_request()，它负责`完整地请求调度`，包括请求的预处理，分配到视图函数，将视图函数返回转换为 WSGI 响应数据。最后wgsi_app()函数将响应对象传递给 WSGI 服务器生成响应。
 
 
 
@@ -437,8 +527,6 @@ Flask.full_dispatch_request()负责`完整地请求调度`。
 #### 路由：
 
 url规则--端点--视图函数
-
-
 
 ##### 注册路由：
 
@@ -462,16 +550,10 @@ route装饰器的内部调用了add_url_rule()来添加URL规则，所以注册�
             self.view_functions[endpoint] = view_func
 ```
 
-
-
 重点在于这两行：
 
 self.url_map.add(rule)
 self.view_functions[endpoint] = view_func
-
-
-
-
 
 url_map是Werkzeug的Map类实例，它存储了URL规则和相关配置
 
@@ -479,11 +561,7 @@ rule是Werkzeug提供的Rule实例，其中保存了端点和URL规则的映射�
 
 view_functions则是Flask类中定义的一个字典，它存储了端点和视图函数的映射关系
 
-
-
 你可以发现端点是如何作为中间人连接起URL规则和视图函数的。前者存储了URL到端点的映射关系，后者则存储了端点和视图函数的映射关系
-
-
 
 ##### url匹配：
 
@@ -495,15 +573,9 @@ MapAdapter类的match()方法用来判断传入的URL是否匹配Map对象中存
 
 > 设置return_rule=True可以在匹配成功后返回表示URL规则的Rule类实例。这个Rule实例包含endpoint属性，存储着匹配成功的端点值。
 
-
-
 MapAdapter类的build()方法用于创建URL，我们用来生成URL的url_for()函数内部就是通过build()方法实现的。
 
-
-
 **实际问题**：客户端发送请求时，Flask是如何根据请求的URL找到对应的视图函数的？
-
-
 
 在上一节分析Flask中的请求响应循环时，我们曾说过，请求的处理最终交给了dispatch_request()方法。
 
@@ -513,17 +585,15 @@ MapAdapter类的build()方法用于创建URL，我们用来生成URL的url_for()
         if req.routing_exception is not None:
             self.raise_routing_exception(req)
         rule = req.url_rule
-  
+
         if getattr(rule, 'provide_automatic_options', False) \
            and req.method == 'OPTIONS':
             return self.make_default_options_response()
-        
+
         return self.view_functions[rule.endpoint](**req.view_args)
 ```
 
 dispatch_request()： 实现了从请求的URL找到端点，再从端点找到对应的视图函数并调用的过程
-
-
 
 在注册路由时，由Rule类表示的rule对象由route()装饰器传入的参数创建。而这里则直接从请求上下文对象(_request_ctx_stack.top.request)的url_rule属性获取。可以得知，URL的匹配工作在请求上下文对象中实现。
 
@@ -531,7 +601,7 @@ dispatch_request()： 实现了从请求的URL找到端点，再从端点找到�
 
 ```python
 class RequestContext(object):
-  
+
     def __init__(self, app, environ, request=None):
         self.app = app
         if request is None:
@@ -552,8 +622,6 @@ class RequestContext(object):
 ```
 
 可以看到url_rule属性就在这个方法中创建。match_request()方法调用了self.url_adapter.match(return_rule=True)来获取url_rule和view_args
-
-
 
 ```python
 class Flask(_PackageBoundObject):
@@ -580,8 +648,6 @@ class Flask(_PackageBoundObject):
 
 match_request()方法通过调用MapAdapter.match()方法来匹配请求URL，设置return_rule=True可以在匹配成功后返回表示URL规则的Rule类实例。这个Rule实例包含endpoint属性，存储着匹配成功的端点值。
 
-
-
 在dispatch_request()最后这一行代码中，通过在view_functions字典中根据端点作为键即可找到对应的视图函数对象，并调用它：
 
 ```Python
@@ -590,16 +656,36 @@ self.view_functions[rule.endpoint](**req.view_args)
 
 这时代码执行流程才终于走到视图函数中。
 
+> `总结`：
+> 
+> 所以，当你启动Flask应用程序时，会将route装饰器修饰的视图函数,放在url_map的Map实例中，保存着url规则和端点的对应关系，view_functions变量保存着端点和视图函数的对应关系。
+> 
+> 当请求进入时，在创建请求上下文过程中，会通过Flask.create_url_adapter()方法调用bind()或bind_to_environ()方法，返回一个MapAdapter类实例;最后调用match_request()返回表示URL规则的Rule类实例, 这个Rule实例包含endpoint属性，存储着匹配成功的端点值，最终保存在请求上下文的RequestContext.request.url_rule变量中。
+> 
+> 在dispatch_request()函数中顺利通过当前请求上下文变量 req获得该请求对应的端点，再从view_functions字典中以端点为键找到对应的视图函数并调用。
+> 
+> 至此，Flask完成了根据请求的URL找到对应的视图函数，并调用该视图函数的过程。
 
 
-`总结`：
-
-所以，当你启动Flask应用程序时，会将route装饰器修饰的视图函数,放在url_map的Map实例中，保存着url规则和端点的对应关系，view_functions变量保存着端点和视图函数的对应关系。
-
-当请求进入时，在创建请求上下文过程中，会通过Flask.create_url_adapter()方法调用bind()或bind_to_environ()方法，返回一个MapAdapter类实例;最后调用match_request()返回表示URL规则的Rule类实例, 这个Rule实例包含endpoint属性，存储着匹配成功的端点值。
-
-在dispatch_request顺利通过当前请求上下文变量 req获得该请求对应的端点，再从view_functions字典中以端点为键找到对应的视图函数并调用。
 
 
 
-至此，Flask完成了根据请求的URL找到对应的视图函数，并调用该视图函数的过程。
+# 这一系列事物为什么会存在？
+
+请求上下文，程序上下文，Local（本地线程），LocalStack（本地堆栈），LocalProxy（本地代理）？
+
+
+
+1)需要保存请求相关的信息——有了请求上下文。
+
+2)为了更好地分离程序的状态，应用起来更加灵活——有了程序上下文。
+
+3)为了让上下文对象可以在全局动态访问，而不用显式地传入视图函数，同时确保线程安全——有了Local（本地线程）​。
+
+4)为了支持多个程序——有了LocalStack（本地堆栈）​。
+
+5)为了支持动态获取上下文对象——有了LocalProxy（本地代理）​。
+
+6)……
+
+7)为了让这一切愉快的工作在一起——有了Flask。
