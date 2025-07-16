@@ -411,8 +411,6 @@ Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正�
 
 和普通应用一样，蓝图一般都放在一个文件夹中。虽然多个蓝图可以共存于同一 个文件夹中，但是最好不要这样做。
 
-
-
 ### 问题
 
 每一个蓝本都是一个休眠的操作子集，只有注册到程序上才会获得生命。那么，这种休眠状态是如何实现的呢？
@@ -420,15 +418,13 @@ Flask 中的蓝图不是一个可插拨的应用，因为它不是一个真正�
 - **定义蓝图时**：不直接注册路由到应用，而是记录 “如何注册”。
 - **注册蓝图时**：执行之前记录的所有 “注册操作”。
 
-
-
 当你使用 `@bp.route` 等装饰器时，蓝图实际上将注册逻辑封装为函数：
 
 ```python
 def route(self, rule, **options):
     def decorator(f):
         endpoint = options.pop("endpoint", f.__name__)
-        
+
         # 定义一个延迟执行的函数
         def register(state):
             state.app.add_url_rule(
@@ -437,7 +433,7 @@ def route(self, rule, **options):
                 f,
                 **options
             )
-            
+
         # 将延迟函数记录到列表中
         self.record(register)
         return f
@@ -450,7 +446,7 @@ def route(self, rule, **options):
 def register(self, app, options, first_registration=False):
     # 创建包含应用上下文的状态对象
     state = self.make_setup_state(app, options, first_registration)
-    
+
     # 执行所有延迟函数
     for deferred in self.deferred_functions:
         deferred(state)  # 传入应用上下文
@@ -482,6 +478,21 @@ def register(state):
 2. 遍历 deferred_functions 列表
 3. 依次执行每个函数：register(state)
 4. 在函数内部，通过 state.app 访问应用并注册路由
+
+
+
+Flask 蓝图的延迟函数执行机制是一种**依赖注入模式**：
+
+- **记录阶段**：蓝图记录 “如何注册”，但不立即执行。
+- **注入阶段**：当蓝图被注册到应用时，注入应用上下文并执行注册逻辑
+
+> 总结：
+> 
+> 定义蓝图的@bp.route('/users/')时，视图函数被封装为"待注册函数"保存在deferred_functions列表中，列表中的函数还未挂载到Flask应用实例上，处于休眠状态。
+> 
+> 当使用app.register_blueprint(bp)注册蓝图时，会创建包含应用信息的state对象，该对象包含app属性，将state对象作为参数传给deferred_functions列表每个函数执行，此时在每个函数内部，通过state.app访问应用并将蓝图的路由注册到Flask应用实例上。
+
+
 
 
 
