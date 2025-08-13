@@ -205,3 +205,54 @@ EXISTS运算符一旦找到一行将会立即终止查询处理，因此，您�
 
 ## EXISTS和NULL
 如果子查询返回NULL，EXISTS运算符仍然将返回结果集。这是因为EXISTS运算符只检查子查询返回的行是否存在。该行是否为NULL并不重要。
+
+
+# UNION
+将两个或多个 SELECT 语句的结果集合并为单个结果集(没有重复)
+
+要保留结果集中的重复行，可以使用 UNION ALL 运算符。
+
+
+# INTERSECT
+获取两个或多个查询的交集。
+与 UNION 运算符 一样，INTERSECT 运算符会从最终结果集中移除重复行。
+
+
+以下语句说明了如何使用 INTERSECT 运算符查找两个结果集的交集。
+~~~
+SELECT
+	id
+FROM
+	a 
+INTERSECT
+SELECT
+	id
+FROM
+	b;
+~~~
+
+(MySQL不提供 INTERSECT 运算符)
+可哟使用 INNER JOIN 子句模拟 SQL INTERSECT 运算符
+~~~
+SELECT
+	a.id
+FROM
+	a
+INNER JOIN b ON b.id = a.id
+~~~
+
+# MINUS
+从一个结果集中减去另一个结果集。返回第一个查询而不具有第二个查询产生但唯一的行。
+
+下面说明了减号运算符的语法。
+~~~
+SELECT
+	id
+FROM
+	A 
+MINUS 
+SELECT
+	id
+FROM
+	B;
+~~~
