@@ -207,6 +207,75 @@ EXISTS运算符一旦找到一行将会立即终止查询处理，因此，您�
 如果子查询返回NULL，EXISTS运算符仍然将返回结果集。这是因为EXISTS运算符只检查子查询返回的行是否存在。该行是否为NULL并不重要。
 
 
+# GROUP BY
+根据一列或多列的值对行进行分组。它为每组返回一行。
+## 对一列进行分组
+~~~
+SELECT 
+    department_id
+FROM 
+    employees
+GROUP BY 
+    department_id;
+~~~
+本例中
+首先，SELECT 从句返回 employees 表的 department_id 列中的所有值。
+其次，GROUP BY 从句将所有值分组到各组中。
+
+employees 表的 department_id 列有 40 行，包括重复的 department_id 值。然而，GROUP BY 将这些值分组到各组中。
+
+## 多列进行分组
+如何根据 department_id 和 job_id 列中的值对员工进行分组？
+~~~
+GROUP BY department_id, job_id
+~~~
+此子句将按 department_id 和 job_id 列中具有相同值的全部员工分到一组中。
+
+下面的语句按 department_id 和 job_id 列中具有相同值的全部行分到同一组中，然后返回这些组中每个组的行。
+~~~
+SELECT 
+    department_name,
+    job_title,
+    COUNT(employee_id)
+FROM
+    employees e
+        INNER JOIN
+    departments d ON d.department_id = e.department_id
+        INNER JOIN
+    jobs j ON j.job_id = e.job_id
+GROUP BY department_name , 
+         job_title;
+Code language: SQL (Structured Query Language) (sql)
+~~~
+结果：
+~~~
++------------------+---------------------------------+--------------------+
+| department_name  | job_title                       | COUNT(employee_id) |
++------------------+---------------------------------+--------------------+
+| Accounting       | Accounting Manager              |                  1 |
+| Accounting       | Public Accountant               |                  1 |
+| Administration   | Administration Assistant        |                  1 |
+| Executive        | Administration Vice President   |                  2 |
+| Executive        | President                       |                  1 |
+| Finance          | Accountant                      |                  5 |
+| Finance          | Finance Manager                 |                  1 |
+| Human Resources  | Human Resources Representative  |                  1 |
+| IT               | Programmer                      |                  5 |
+| Marketing        | Marketing Manager               |                  1 |
+| Marketing        | Marketing Representative        |                  1 |
+| Public Relations | Public Relations Representative |                  1 |
+| Purchasing       | Purchasing Clerk                |                  5 |
+| Purchasing       | Purchasing Manager              |                  1 |
+| Sales            | Sales Manager                   |                  2 |
+| Sales            | Sales Representative            |                  4 |
+| Shipping         | Shipping Clerk                  |                  2 |
+| Shipping         | Stock Clerk                     |                  1 |
+| Shipping         | Stock Manager                   |                  4 |
++------------------+---------------------------------+--------------------+
+19 rows in set (0.00 sec)
+~~~
+
+
 # UNION
 将两个或多个 SELECT 语句的结果集合并为单个结果集(没有重复)
 
@@ -330,3 +399,123 @@ FROM
     employees;
 ~~~
 如果工资低于 3000，CASE 表达式返回“低”。如果工资在 3000 到 5000 之间，则返回“一般”。如果工资大于 5000，CASE 表达式返回“高”。
+
+
+# 视图
+视图如同通过执行查询而生成的虚拟表格。关系数据库管理系统 (RDBMS) 将视图作为命名的 SELECT 存储在数据库目录中。
+无论何时发出包含视图名称的 SELECT 语句，RDBMS 都将执行视图定义查询以创建虚拟表格。然后该虚拟表格用作查询的源表格。
+
+为什么要使用视图？
+1.允许您将复杂查询存储在数据库中。
+2.帮助您为特定用户组打包数据。例如，您可以创建财务部门员工工资数据的视图。
+3.帮助维护数据库安全性。您可以创建视图仅显示必要数据，并授予用户访问该视图的权限，而不必向用户授予访问数据库表格的权限。
+
+创建视图,请如下使用 CREATE VIEW 语句
+~~~
+CREATE VIEW view_name 
+AS
+SELECT-statement
+~~~
+默认情况下，视图中列的名称与 SELECT 语句中指定的列相同。 如果您想在视图中重命名列，请如下在 CREATE VIEW 子句后包含新列名称。
+~~~
+CREATE VIEW view_name(new_column_list) 
+AS
+SELECT-statement;
+~~~
+
+
+
+从视图中查询数据
+从视图中查询数据与从表格中查询数据相同。以下语句从 employee_contacts 视图中选择数据。
+~~~
+SELECT 
+    *
+FROM
+    employee_contacts;
+~~~
+
+修改视图
+如果视图不存在，该语句将创建该视图，如果视图已存在，该语句将更改当前视图。
+~~~
+CREATE OR REPLACE view_name AS
+SELECT-statement;
+~~~
+
+
+移除 SQL 视图
+`DROP VIEW` 语句仅删除视图，而不删除基准表。
+~~~
+DROP VIEW view_name;
+~~~
+
+在mysql使用delete删除视图某个行，会影响源数据表吗？
+简单视图（由单个表的查询创建，不包含聚合函数、DISTINCT、GROUP BY、HAVING 等）：
+执行 DELETE 操作会直接删除源数据表中对应的数据
+例如：DELETE FROM view_name WHERE id = 1 会删除源表中 id=1 的记录
+
+复杂视图（包含多个表连接、聚合函数、DISTINCT 等）：
+MySQL 不允许执行 DELETE 操作，会直接报错
+因为这类视图的数据来自多个表或经过计算处理，无法明确确定应该删除哪些源数据
+
+
+# 触发器
+触发器是在数据库表中发生特定事件后自动执行的一段代码。
+触发器始终与特定表关联。如果删除表，则所有关联的触发器也会自动删除。
+
+触发器要么在以下事件之前要么之后调用：
+INSERT – 插入新行时
+UPDATE – 更新现有行时
+DELETE – 删除行时。
+
+
+## 两种类型的触发器：行级触发器和语句级触发器。
+- 行级触发器在UPDATE语句影响行时每次执行。如果UPDATE语句影响 10 行，则行级触发器将执行 10 次，每次针对一行。如果UPDATE语句不影响任何行，则行级触发器根本不会执行。
+- 语句级触发器会被调用一次，无论UPDATE语句影响多少行。请注意，如果UPDATE语句未影响任何行，则触发器仍将执行。
+
+创建触发器时，可以使用 FOR EACH ROW 或 FOR EACH STATEMENT 分别指定触发器是行级别还是语句级别。
+
+## 应用场景
+- 记录表修改。 某些表具有敏感数据，如客户电子邮件、员工薪资等，您需要记录所有更改。
+- 实施复杂数据完整性。在此场景中，您可以定义触发器，验证数据并在必要时重新设置数据格式。例如，可以使用 BEFORE INSERT 或 BEFORE UPDATE 触发器，在插入或更新前转换数据。
+
+创建触发器
+~~~
+CREATE TRIGGER trigger_name [BEFORE|AFTER] event
+ON table_name trigger_type
+BEGIN
+  -- trigger_logic
+END;
+~~~
+
+# 函数
+
+## 字符串函数
+### CONCAT: 将两个或多个字符串串联成一个字符串
+~~~
+CONCAT(string1,string2,..);
+~~~
+如果参数中有一个为 NULL，则返回 NULL
+
+示例：
+~~~
+SELECT CONCAT('SQL CONCAT function', ' demo');
+
+        concat
+----------------------
+ SQL CONCAT function demo
+(1 row)
+~~~
+
+使用 MySQL 或 PostgreSQL，您可以使用 CONCAT_WS 函数使用分隔符串联字符串。
+~~~
+CONCAT_WS(separator,string1,string2,...);
+~~~
+使用 CONCAT_WS 函数如下构建员工全名
+~~~
+SELECT 
+    CONCAT_WS(' ',first_name,last_name) AS name
+FROM
+    employees
+ORDER BY name;
+~~~
+
