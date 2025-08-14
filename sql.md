@@ -256,3 +256,77 @@ SELECT
 FROM
 	B;
 ~~~
+
+
+# INSERT 
+从其他表复制行
+可以使用 INSERT 语句从一张或多张表中查询数据，并将其插入到另一张表中，如下所示
+~~~
+INSERT INTO table1 (column1, column2) 
+SELECT
+	column1,
+	column2
+FROM
+	table2
+WHERE
+	condition1;
+~~~
+
+有一个名为 dependents_archive 的表，其结构与 dependents 表的结构相同。将从 dependents 表中复制所有行到 dependents_archive 表中
+~~~
+INSERT INTO dependents_archive 
+SELECT
+	*
+FROM
+	dependents;
+~~~
+
+# CASE
+允许你向 SQL 语句添加 IF THEN ELSE 逻辑。
+## 简单case表达式
+~~~
+CASE expression
+WHEN when_expression_1 THEN
+	result_1
+WHEN when_expression_2 THEN
+	result_2
+WHEN when_expression_3 THEN
+	result_3
+...
+ELSE
+	else_result
+END
+~~~
+CASE 表达式使用相等运算符 (=) 将表达式与表达式集（when_expression_1、when_expression_2、when_expression_3、…）进行比较
+
+
+## 搜索表达式
+~~~
+CASE
+WHEN boolean_expression_1 THEN
+	result_1
+WHEN boolean_expression_2 THEN
+	result_2
+WHEN boolean_expression_3 THEN
+	result_3
+ELSE
+	else_result
+END;
+~~~
+使用其他比较运算符（例如大于 (>)、小于 (<) 等）
+
+
+例子：
+~~~
+SELECT 
+    first_name,
+    last_name,
+    CASE
+        WHEN salary < 3000 THEN 'Low'
+        WHEN salary >= 3000 AND salary <= 5000 THEN 'Average'
+        WHEN salary > 5000 THEN 'High'
+    END evaluation
+FROM
+    employees;
+~~~
+如果工资低于 3000，CASE 表达式返回“低”。如果工资在 3000 到 5000 之间，则返回“一般”。如果工资大于 5000，CASE 表达式返回“高”。
