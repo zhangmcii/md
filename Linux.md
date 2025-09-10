@@ -1,4 +1,4 @@
-# Linux基本命令：
+# Linux基本命令
 
 ## 文件与目录的基本操作
 
@@ -91,7 +91,7 @@ rm -rf test  可以删除成功
 -f ： force 强制的意思，如果目标文件已经存在，不会询问而直接覆盖
 ```
 
-
+---
 
 ## 文件属性
 
@@ -121,6 +121,8 @@ rm -rf test  可以删除成功
 - status time (ctime)：文件的状态（权限、属性）更新就会更新；
 - access time (atime)：读取文件时就会更新。
 
+
+---
 
 ## 修改权限
 
@@ -155,6 +157,8 @@ rm -rf test  可以删除成功
 ## chmod a+w .bashrc
 ```
 
+
+---
 ## 默认权限
 
 - 文件默认权限：文件默认没有可执行权限，因此为 666，也就是 -rw-rw-rw- 。
@@ -162,13 +166,14 @@ rm -rf test  可以删除成功
 
 可以通过 umask 设置或者查看默认权限，通常以掩码的形式来表示，例如 002 表示其它用户的权限去除了一个 2 的权限，也就是写权限，因此建立新文件时默认的权限为 -rw-rw-r--。
 
+---
 ## 目录的权限
 
 文件名不是存储在一个文件的内容中，而是存储在一个文件所在的目录中。因此，拥有文件的 w 权限并不能对文件名进行修改。
 
 目录存储文件列表，一个目录的权限也就是对其文件列表的权限。因此，目录的 r 权限表示可以读取文件列表；w 权限表示可以修改文件列表，具体来说，就是添加删除文件，对文件名进行修改；x 权限可以让该目录成为工作目录，x 权限是 r 和 w 权限的基础，如果不能使一个目录成为工作目录，也就没办法读取文件列表以及对文件列表进行修改了。
 
-
+---
 ## 链接
 > ll：其实是 ls -l 的别名
 注意： ll 不是mac系统自带命令
@@ -215,7 +220,7 @@ source ~/.zshrc
 53745909 lrwxrwxrwx. 1 root root 12 Jun 23 22:31 /root/crontab2 -> /etc/crontab
 ```
 
-
+---
 ## 获取文件内容
 
 #### 1. cat
@@ -256,6 +261,8 @@ source ~/.zshrc
 
 以字符或者十六进制的形式显示二进制文件。
 
+
+---
 ## 指令与文件搜索
 
 #### 1. which
@@ -344,6 +351,8 @@ find . -mtime -7
 -perm /mode ：搜索权限包含任一 mode 的文件
 ```
 
+---
+
 ## 压缩指令
 
 #### 1. gzip
@@ -388,6 +397,8 @@ $ bzip2 [-cdkzv#] filename
 $ xz [-dtlkc#] filename
 ```
 
+
+---
 ## 打包
 
 压缩指令只能对一个文件进行压缩，而打包能够将多个文件打包成一个大文件。tar 不仅可以用于打包，也可以使用 gzip、bzip2、xz 将打包文件进行压缩。
@@ -413,6 +424,7 @@ $ tar [-z|-j|-J] [xv] [-f 已有的 tar 文件] [-C 目录]    ==解压缩
 | 查 看 | tar -jtv -f filename.tar.bz2 |
 | 解压缩 | tar -jxv -f filename.tar.bz2 -C 要解压缩的目录 |
 
+---
 ## grep
 
 g/re/p（globally search a regular expression and print)，使用正则表示式进行全局查找并打印。
@@ -443,6 +455,7 @@ $ grep -n 'the' regular_express.txt
 $ grep -n 'a\{2,5\}' regular_express.txt
 ```
 
+---
 ## awk
 
 是由 Alfred Aho，Peter Weinberger 和 Brian Kernighan 创造，awk 这个名字就是这三个创始人名字的首字母。
@@ -503,7 +516,7 @@ dmtsai lines: 4 columns: 10
 dmtsai lines: 5 columns: 9
 ```
 
-
+---
 ## 查看进程
 
 #### 1. ps
