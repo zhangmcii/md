@@ -563,6 +563,7 @@ int fullBiTreeCount(BiTree root){
 fullBiTreeCount(root)
 ```
 
+
 ```
 int countNodes(TreeNode root) {
     if (root == NULL) return 0;
@@ -585,3 +586,159 @@ int countNodes(TreeNode root) {
 ```
 时间复杂度：O(log n × log n) = O(log² n)
 空间复杂度：O(log n)
+
+
+## 给定一个二叉树，判断它是否是高度平衡的二叉树。
+
+本题中，一棵高度平衡二叉树定义为：一个二叉树每个节点 的左右两个子树的高度差的绝对值不超过1。
+
+示例 1:
+给定二叉树 [3,9,20,null,null,15,7]
+![题目9](https://file1.kamacoder.com/i/algo/2021020315542230.png)
+返回 true 。
+
+思路：先序遍历，判断每个节点的左右子树高度之差。会造成重复求,所以排除
+    后序遍历可以
+
+这里强调一波概念：
+
+二叉树节点的深度：指从根节点到该节点的最长简单路径边的条数。
+二叉树节点的高度：指从该节点到叶子节点的最长简单路径边的条数。
+但leetcode中强调的深度和高度很明显是按照节点来计算的，如图：
+![题目10](https://file1.kamacoder.com/i/algo/20210203155515650.png)
+
+关于根节点的深度究竟是1 还是 0，不同的地方有不一样的标准，leetcode的题目中都是以节点为一度，即根节点深度是1。
+但维基百科上定义用边为一度，即根节点的深度是0，我们暂时以leetcode为准（毕竟要在这上面刷题）。
+因为求深度可以从上到下去查 所以需要前序遍历，而高度只能从下到上去查，所以只能后序遍历
+
+后序遍历：
+1.明确递归函数的参数和返回值
+参数：当前传入节点。 返回值：以当前传入节点为根节点的树的高度。
+如果当前传入节点为根节点的二叉树已经不是二叉平衡树了，还返回高度的话就没有意义了。
+所以如果已经不是二叉平衡树了，可以返回-1 来标记已经不符合平衡树的规则了。
+2.明确终止条件
+递归的过程中依然是遇到空节点了为终止，返回0，表示当前节点为根节点的树高度为0
+3.明确单层递归的逻辑
+分别求出其左右子树的高度，然后如果差值小于等于1，则返回当前二叉树的高度，否则返回-1，表示已经不是二叉平衡树了。
+```
+int getDepth(BiTree root){
+    if(root == NUll) return 0;
+    lchildDepth = getDepth(root->lchild);
+    if(lchildDepth == -1) return -1;
+    rchildDepth = getDepth(root->rchild);
+    if(rchildDepth == -1) return -1;
+    if(abs(lchildDepth - rchildDepth) <= 1){
+        return (lchildDepth > rchildDepth ? lchildDepth: rchildDepth) + 1;
+    }
+    return -1;
+}
+
+bool isBalanced(BiTree root){
+    return getDepth(root) == -1 ? false: true;
+}
+```
+> 总结
+  通过本题可以了解求二叉树深度 和 二叉树高度的差异，求深度适合用前序遍历，而求高度适合用后序遍历。
+
+
+
+## 给定一个二叉树，返回所有从根节点到叶子节点的路径。(比较难)
+
+说明: 叶子节点是指没有子节点的节点。
+
+示例:
+![图片10](https://file1.kamacoder.com/i/algo/2021020415161576.png)
+思路： 先序遍历
+
+在这道题目中将第一次涉及到回溯，因为我们要把路径记录下来，需要回溯来回退一个路径再进入另一个路径。
+
+``` python
+# path用来记录路径
+def traversal(self, cur, path, result):
+    path.append(cur.val)  # 中
+    if not cur.left and not cur.right:  # 到达叶子节点
+        sPath = '->'.join(map(str, path))
+        result.append(sPath)
+        return
+    if cur.left:  # 左
+        self.traversal(cur.left, path, result)
+        path.pop()  # 回溯
+    if cur.right:  # 右
+        self.traversal(cur.right, path, result)
+        path.pop()  # 回溯
+
+def binaryTreePaths(self, root):
+    result = []
+    path = []
+    if not root:
+        return result
+    self.traversal(root, path, result)
+    return result
+```
+
+
+##
+思路：先序遍历。 找到所有左叶子，再累加
+卡点： 怎么判断是左叶子
+
+判断当前节点是不是左叶子是无法判断的，必须要通过节点的父节点来判断其左孩子是不是左叶子。
+如果该节点的左节点不为空，该节点的左节点的左节点为空，该节点的左节点的右节点为空，则找到了一个左叶子，判断代码如下：
+if (node->left != NULL && node->left->left == NULL && node->left->right == NULL) {
+    左叶子节点处理逻辑
+}
+
+
+```
+int sumOfLeftLeaves(TreeNode* root) {
+    if (root == NULL) return 0;
+    if (root->left == NULL && root->right== NULL) return 0;
+
+    int leftValue = sumOfLeftLeaves(root->left);    // 左
+    if (root->left && !root->left->left && !root->left->right) { // 左子树就是一个左叶子的情况
+        leftValue = root->left->val;
+    }
+    int rightValue = sumOfLeftLeaves(root->right);  // 右
+
+    int sum = leftValue + rightValue;               // 中
+    return sum;
+}
+```
+
+## 给定二叉搜索树（BST）的根节点和一个值。 你需要在BST中找到节点值等于给定值的节点。 返回以该节点为根的子树。 如果节点不存在，则返回 NULL。
+
+例如，
+![图片11](https://file1.kamacoder.com/i/algo/20210204155522476.png)
+在上述示例中，如果要找的值是 5，但因为没有节点值为 5，我们应该返回 NULL。
+
+递归:
+```
+TreeNode* searchBST(TreeNode* root, int val) {
+    if (root == NULL || root->val == val) return root;
+    TreeNode* result = NULL;
+    if (root->val > val) result = searchBST(root->left, val);
+    if (root->val < val) result = searchBST(root->right, val);
+    return result;
+}
+```
+
+优化：
+```
+TreeNode* searchBST(TreeNode* root, int val) {
+    if (root == NULL || root->val == val) return root;
+    if (root->val > val) return searchBST(root->left, val);
+    if (root->val < val) return searchBST(root->right, val);
+    return NULL;
+}
+```
+
+迭代：
+```
+TreeNode* searchBST(TreeNode* root, int val) {
+    while (root != NULL) {
+        if (root->val > val) root = root->left;
+        else if (root->val < val) root = root->right;
+        else return root;
+    }
+    return NULL;
+}
+```
