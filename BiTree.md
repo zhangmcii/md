@@ -134,6 +134,14 @@ bool DeQueue(Queue Q, BiTree &q){
      return true;
 }
 
+二叉树节点定义：
+```
+typedef int ElemType；
+typedef struct{
+    ElemType data;
+    struct BiNode *lchild, *rchild;
+}BiNode, *BiTree;
+```
 
 ## 给定一个二叉树，返回其节点值自底向上的层次遍历。 （即按从叶子节点所在层到根节点所在的层，逐层从左向右遍历）
 思路: 相对于二叉树的层序遍历，就是最后把result数组反转一下就可以了。
@@ -677,7 +685,10 @@ def binaryTreePaths(self, root):
 ```
 
 
-##
+## 计算给定二叉树的所有左叶子之和。
+示例：
+![题目11](https://file1.kamacoder.com/i/algo/20210204151927654.png)
+
 思路：先序遍历。 找到所有左叶子，再累加
 卡点： 怎么判断是左叶子
 
