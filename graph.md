@@ -228,6 +228,7 @@ int findIland(MGraph m, int start){
 序号超过矩阵实际大小
 ```
 
+深搜版：
 ```
 #include <stdio.h>
 #include <string.h>
@@ -349,4 +350,558 @@ if __name__ == '__main__':
                 dfs(grid, visited, i, j)
 
     print(res)
+```
+
+
+
+广搜版 加上辅助队列：
+注意： 只要 加入队列就代表 走过，就需要标记，而不是从队列拿出来的时候再去标记走过。否则会超时
+如果从队列拿出节点，再去标记这个节点走过，就会发生下图所示的结果，会导致很多节点重复加入队列。
+![解释1](https://file1.kamacoder.com/i/algo/20250124094043.png)
+```
+// 四个方向：上、右、下、左
+int direction[4][2] = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+
+// 静态二维数组存储网格和访问标记
+int grid[MAX_ROWS][MAX_COLS];
+int visited[MAX_ROWS][MAX_COLS];
+int rows, cols;  // 实际网格的行数和列数
+
+// 坐标点
+typedef struct {
+    int x;
+    int y;
+} Point;
+
+// 简单队列
+typedef struct {
+    Point data[MAX_QUEUE_SIZE];
+    int front, rear;
+}*Queue;
+
+void bfs(int grid[MAX_ROWS][MAX_COLS], Queue Q, int startX, int startY) {
+    enQueue(Q, {startX, startY});
+    visited[startX][startY] = true;
+
+    while(!isEmpty(Q)) {
+        Point cur = deQueue(Q); // Point = {int x, int y}
+        int curX = cur.x;
+        int curY = cur.y;
+
+        for(int i = 0; i < 4; i++) {
+            int newX = curX + direction[i][0];
+            int newY = curY + direction[i][1];
+
+            if(newX < 0 || newY < 0 || newX >= rows || newY >= cols) continue;
+
+            if(grid[newX][newY] == 1 && !visited[newX][newY]) {
+                enQueue(Q, {newX, newY});
+                visited[newX][newY] = true;
+            }
+        }
+    }
+}
+
+int main() {
+    int result = 0;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            if (!visited[i][j] && grid[i][j] == 1) {
+                result++; // 遇到没访问过的陆地，+1
+                bfs(grid, Q, i, j); // 将与其链接的陆地都标记上 true
+            }
+        }
+    }
+}
+```
+
+## 岛屿最大面积
+思路： 深搜。加入计数的数组
+
+dfs的返回值： 岛屿面积
+
+
+```
+int dfs(int x, int y) {
+
+    // 终止条件：已访问或不是陆地
+    if (visited[x][y] || grid[x][y] == 0) {
+        return 0;
+    }
+    // 标记当前位置为已访问
+    visited[x][y] = true;
+    // 面积为1
+    int square = 1;
+
+
+    // 遍历四个方向
+    for (int i = 0; i < 4; i++) {
+        int next_x = x + direction[i][0];
+        int next_y = y + direction[i][1];
+
+        // 检查下标是否越界
+        if (next_x < 0 || next_x >= rows || next_y < 0 || next_y >= cols) {
+            continue;
+        }
+
+        // 递归访问相邻位置
+        square += dfs(next_x, next_y);
+    }
+    return square;
+}
+
+int main() {
+    int res = 0;
+    int maxSquare = 0;
+    // 遍历整个网格
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            // 找到未访问的陆地，计数并标记整个连通区域
+            if (grid[i][j] == 1 && visited[i][j] == false) {
+                res = dfs(i, j);
+                maxSquare = res >= maxSquare ? res : maxSquare;
+            }
+        }
+    }
+
+    // 输出结果
+    printf("%d\n", maxSquare);
+
+    return 0;
+}
+```
+
+
+## 孤岛总面积
+岛屿指的是由水平或垂直方向上相邻的陆地单元格组成的区域，且完全被水域单元格包围。
+孤岛是那些位于矩阵内部、所有单元格都不接触边缘的岛屿。
+
+现在你需要计算所有孤岛的总面积，岛屿面积的计算方式为组成岛屿的陆地的总数。
+
+思路：深搜不检测边缘
+思路2: 将周边靠陆地且相邻的陆地都变成海洋，然乎重新遍历计算陆地数即可
+如图，在遍历地图周围四个边，靠地图四边的陆地，都为绿色，
+![思路1](https://file1.kamacoder.com/i/algo/20220830104632.png)
+![思路2](https://file1.kamacoder.com/i/algo/20220830104651.png)
+
+
+错误：
+```
+sole = false
+int dfs(int x, int y) {
+
+    // 终止条件：已访问或不是陆地
+    if (visited[x][y] || grid[x][y] == 0) {
+        return 0;
+    }
+    // 标记当前位置为已访问
+    visited[x][y] = true;
+    // 面积为1
+    int square = 1;
+
+
+    // 遍历四个方向
+    for (int i = 0; i < 4; i++) {
+        int next_x = x + direction[i][0];
+        int next_y = y + direction[i][1];
+
+        // 检查下标是否越界
+        if (next_x < 0 || next_x >= rows || next_y < 0 || next_y >= cols) {
+            continue;
+        }
+        if(next_x == 0 || next_x == rows - 1 || next_y == 0 || next_y == cols - 1){
+            // 非孤岛
+            sole = false;
+            continue;
+        }
+
+        // 递归访问相邻位置
+        square += dfs(next_x, next_y);
+    }
+    return sole == true ? square: 0;
+}
+
+int main() {
+
+    int res = 0;
+    int maxSquare = 0;
+    // 遍历整个网格
+    for (int i = 1; i < rows - 1; i++) {
+        for (int j = 1; j < cols - 1; j++) {
+            // 找到未访问的陆地，计数并标记整个连通区域
+            if (grid[i][j] == 1 && visited[i][j] == false) {
+                sole = true;
+                res = dfs(i, j);
+                maxSquare = res >= maxSquare ? res : maxSquare;
+            }
+        }
+    }
+
+    // 输出结果
+    printf("%d\n", maxSquare);
+    return 0;
+}
+```
+
+
+改正：
+更好的方式是：
+1.先完整计算岛屿面积
+2.DFS 只返回面积，不关心是否孤岛
+3.外层 main 根据 sole 决定是否加到总和
+
+```
+
+bool sole; // 标记是否孤岛
+
+int dfs(int x, int y) {
+    if (visited[x][y] || grid[x][y] == 0) {
+        return 0;
+    }
+    visited[x][y] = true;
+    int square = 1;
+
+    // 如果当前点在边界，说明不是孤岛
+    if (x == 0 || x == rows - 1 || y == 0 || y == cols - 1) {
+        sole = false;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        int next_x = x + direction[i][0];
+        int next_y = y + direction[i][1];
+        if (next_x < 0 || next_x >= rows || next_y < 0 || next_y >= cols) continue;
+        square += dfs(next_x, next_y);
+    }
+    return square;
+}
+
+int main() {
+    int totalArea = 0;
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (grid[i][j] == 1 && visited[i][j] == false) {
+                sole = true; // 每次新岛屿默认是孤岛
+                int area = dfs(i, j);
+                if (sole) {
+                    totalArea += area;
+                }
+            }
+        }
+    }
+
+    printf("%d\n", totalArea);
+    return 0;
+}
+
+```
+
+## 沉没孤岛
+思路1： 找出孤岛， 对孤岛进行更新
+思路2: 步骤一：深搜或者广搜将地图周边的 1 （陆地）全部改成 2 （特殊标记）
+步骤二：将水域中间 1 （陆地）全部改成 水域（0）
+步骤三：将之前标记的 2 改为 1 （陆地）
+
+
+```
+bool sole; // 标记是否孤岛
+
+int dfs(int x, int y) {
+    if (visited[x][y] || grid[x][y] == 0) {
+        return 0;
+    }
+    visited[x][y] = true;
+    int square = 1;
+
+    // 如果当前点在边界，说明不是孤岛
+    if (x == 0 || x == rows - 1 || y == 0 || y == cols - 1) {
+        sole = false;
+    }
+
+    for (int i = 0; i < 4; i++) {
+        int next_x = x + direction[i][0];
+        int next_y = y + direction[i][1];
+        if (next_x < 0 || next_x >= rows || next_y < 0 || next_y >= cols) continue;
+        square += dfs(next_x, next_y);
+    }
+    return square;
+}
+
+
+void updateInland(int grid[MAX_ROWS][MAX_COLS], int x, int y){
+    if (grid[x][y] == 0) {
+        return;
+    }
+    grid[x][y] = 0;
+
+    for (int i = 0; i < 4; i++) {
+        int next_x = x + direction[i][0];
+        int next_y = y + direction[i][1];
+        if (next_x < 0 || next_x >= rows || next_y < 0 || next_y >= cols) continue;
+        updateInland(grid, next_x, next_y);
+    }
+}
+
+int main() {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (grid[i][j] == 1 && visited[i][j] == 0) {
+                sole = true; // 每次新岛屿默认是孤岛
+                dfs(i, j);
+                if (sole) {
+                    updateInland(grid, i, j);
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+```
+
+## 高山流水
+现有一个 N × M 的矩阵，每个单元格包含一个数值，这个数值代表该位置的相对高度。矩阵的左边界和上边界被认为是第一组边界，而矩阵的右边界和下边界被视为第二组边界。
+
+思路： 深搜，对上下左右方向进行搜索
+终止条件： 当前坐标在第一或第二边界上
+```
+bool visited[10][10];
+int direction[4][2] = {{1,0}, {-1, 0}, {0, 1}, {0, -1}}
+
+void dfs(int x, int y){
+    for(int i=0;i<4;i++){
+        next_x = direction[i][0]
+        next_y = direction[i][1]
+        if (next_x < 0 || next_x >= rows || next_y < 0 || next_y >= cols) continue;
+        if(grid[x][y] >= grid[next_x][next_y]){
+            dfs(next_x, next_y)
+        }
+    }
+}
+
+```
+
+
+## 拓扑排序
+
+思路：实现拓扑排序的算法有两种：卡恩算法（BFS）和DFS
+一般来说我们只需要掌握 BFS （广度优先搜索）就可以了，清晰易懂
+拓扑排序的过程，其实就两步：
+1.找到入度为0 的节点，加入结果集
+2.将该节点从图中移除
+
+邻接矩阵：
+```
+void topologicalSortKahn(int numVertices, int** graph) {
+    int* inDegree = (int*)calloc(numVertices, sizeof(int));
+    int* queue = (int*)malloc(numVertices * sizeof(int));
+    int front = 0, rear = 0;
+    int count = 0; // 已输出的顶点数
+
+    // 计算入度
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) {
+            if (graph[j][i] > 0) {
+                inDegree[i]++;
+            }
+        }
+    }
+
+    // 入度为0的顶点入队
+    for (int i = 0; i < numVertices; i++) {
+        if (inDegree[i] == 0) {
+            queue[rear++] = i;
+        }
+    }
+
+    // 拓扑排序
+    while (front < rear) {
+        int u = queue[front++];
+        printf("%d ", u);
+        count++;
+
+        for (int v = 0; v < numVertices; v++) {
+            if (graph[u][v] > 0) {
+                if (--inDegree[v] == 0) {
+                    queue[rear++] = v;
+                }
+            }
+        }
+    }
+
+    // 检查是否存在环
+    if (count != numVertices) {
+        printf("\n图中存在环路!\n");
+    }
+
+    free(inDegree);
+    free(queue);
+}
+```
+
+
+邻接表：
+```
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 100
+
+// 邻接表节点结构
+typedef struct ArcNode {
+    int adjvex;
+    struct ArcNode* nextarc;
+} ArcNode;
+
+// 顶点节点结构
+typedef struct VNode {
+    char data;
+    ArcNode* firstarc;
+    int inDegree; // 顶点入度
+} VNode, AdjList[MAX_VERTEX];
+
+// 图结构
+typedef struct {
+    AdjList vertices;
+    int vexnum, arcnum;
+} ALGraph;
+
+// 创建邻接表
+void CreateALGraph(ALGraph* G) {
+    printf("输入顶点数和边数: ");
+    scanf("%d %d", &G->vexnum, &G->arcnum);
+
+    // 初始化顶点
+    printf("输入%d个顶点数据: ", G->vexnum);
+    for (int i = 0; i < G->vexnum; i++) {
+        scanf(" %c", &G->vertices[i].data);
+        G->vertices[i].firstarc = NULL;
+        G->vertices[i].inDegree = 0;
+    }
+
+    // 构建边
+    printf("输入%d条边(格式:起点下标 终点下标):\n", G->arcnum);
+    for (int k = 0; k < G->arcnum; k++) {
+        int i, j;
+        scanf("%d %d", &i, &j);
+
+        ArcNode* p = (ArcNode*)malloc(sizeof(ArcNode));
+        p->adjvex = j;
+        p->nextarc = G->vertices[i].firstarc;
+        G->vertices[i].firstarc = p;
+        G->vertices[j].inDegree++; // 终点入度增加
+    }
+}
+
+// 拓扑排序
+int TopologicalSort(ALGraph G) {
+    int stack[MAX_VERTEX], top = -1;
+    int count = 0; // 输出顶点计数
+    int* result = (int*)malloc(G.vexnum * sizeof(int));
+
+    // 将入度为0的顶点入栈
+    for (int i = 0; i < G.vexnum; i++) {
+        if (G.vertices[i].inDegree == 0) {
+            stack[++top] = i;
+        }
+    }
+
+    while (top != -1) {
+        int v = stack[top--];
+        result[count++] = v;
+
+        // 遍历v的所有邻接点
+        ArcNode* p = G.vertices[v].firstarc;
+        while (p != NULL) {
+            int k = p->adjvex;
+            if (--G.vertices[k].inDegree == 0) {
+                stack[++top] = k;
+            }
+            p = p->nextarc;
+        }
+    }
+
+    // 输出拓扑序列
+    if (count == G.vexnum) {
+        printf("拓扑排序结果: ");
+        for (int i = 0; i < count; i++) {
+            printf("%c ", G.vertices[result[i]].data);
+        }
+        printf("\n");
+        free(result);
+        return 1;
+    } else {
+        printf("图中存在环，无法拓扑排序\n");
+        free(result);
+        return 0;
+    }
+}
+
+int main() {
+    ALGraph G;
+    CreateALGraph(&G);
+    TopologicalSort(G);
+    return 0;
+}
+```
+
+
+## 判断拓扑排序是否唯一
+思路：初始化时将所有入度为0的顶点放入队列。每次从队列中取出一个顶点，并移除其所有出边。若队列中存在多个顶点，则拓扑排序不唯一；若仅有一个顶点，则排序唯一。
+
+邻接矩阵：
+```
+void topologicalSortKahn(int numVertices, int** graph) {
+    int* inDegree = (int*)calloc(numVertices, sizeof(int));
+    int* queue = (int*)malloc(numVertices * sizeof(int));
+    int front = 0, rear = 0;
+    int count = 0; // 已输出的顶点数
+
+    // 计算入度
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) {
+            if (graph[j][i] > 0) {
+                inDegree[i]++;
+            }
+        }
+    }
+
+    // 入度为0的顶点入队
+    for (int i = 0; i < numVertices; i++) {
+        if (inDegree[i] == 0) {
+            queue[rear++] = i;
+        }
+    }
+
+    // 标记拓扑序是否唯一
+    int unique = 1;
+
+    // 拓扑排序
+    while (front < rear) {
+        if (rear - front > 1) {
+            unique = 0; // 队列里有多个候选，序列不唯一
+        }
+        int u = queue[front++];
+        printf("%d ", u);
+        count++;
+
+        for (int v = 0; v < numVertices; v++) {
+            if (graph[u][v] > 0) {
+                if (--inDegree[v] == 0) {
+                    queue[rear++] = v;
+                }
+            }
+        }
+    }
+
+    if (count != numVertices) {
+        printf("\n图中存在环路!\n");
+    } else if (!unique) {
+        printf("\n拓扑排序不唯一!\n");
+    } else {
+        printf("\n拓扑排序唯一!\n");
+    }
+
+    free(inDegree);
+    free(queue);
+}
 ```
