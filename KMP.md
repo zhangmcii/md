@@ -204,3 +204,88 @@ int KMP(const char *haystack, const char *needle) {
     return -1; // 没有找到匹配
 }
 ~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+默写：
+~~~
+int KMP(char* s, char* t){
+    int lenSource = strlen(s);
+    int lenTarget = strlen(t);
+    if(lenTarget == 0) return 0;
+
+    // 构造next前缀数组
+    int* next = (int*)malloc(sizeof(int)*lenTarget);
+    buildNext(t, next);
+
+    int j = -1;
+    for(int i = 0;i < lenSource;i++){
+        // j+1处失配
+        while(j>=0 && s[i] != t[j+1]){
+            // 查找前一个字符的前缀表
+            j = next[j];
+        }
+        // 当前处匹配，j向后移动
+        if(s[i] == t[j+1]){
+            j++;
+        }
+
+        if(j == lenTarget - 1){
+            // 重要。别忘了释放空间‼️
+            free(next);
+            // 因为前缀表统一减1了，即j是从-1开始
+            return i - j + 1;
+        }
+    }
+    // 重要。别忘了释放空间‼️
+    free(next);
+    return -1;
+}
+
+出错的地方：申请了空间，在函数结束时需要释放：  free(next);
+~~~
+
+
+~~~
+void buildNext(char* t, int* next){
+    int lenTarget = strlen(t);
+    int j = -1;
+    next[0] = j;
+    for(int i = 1; i < lenTarget; i++){
+        // 失配
+        while(j >= 0 && t[i] != t[j+1]){
+            // j回退到前一个字符的前缀表
+            j = next[j];
+        }
+        
+        // 匹配，j向后移动
+        if(t[i] == t[j+1]){
+            j++;
+        }
+        next[i] = j;
+    }
+}
+
+出错的地方：函数无返回值即可： void buildNext
+~~~
+
+
