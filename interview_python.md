@@ -490,7 +490,226 @@ def reverse(data):
 ## 列表推导式内部变量的作用域是什么？是否会泄露到外部作用域？（常考陷阱）
 
 列表推导式创建列表的方式更简洁，外面是一个方括号，里面是一个表达式，后面为一个for子句，然后是零个或多个 for 或 if 子句。
-
+与for-loop创建列表的区别：写法更简洁，更具表达性，执行效率更高。
+比for循环更快：1.列表推倒式在C层执行 2.减少了.append的函数调用开销 3.局部变量访问更快
+与生产器表达式区别：列表推导式是立即创建整个列表的，因此速度快但占用更多内存； 生成器表达式按需生成元素，占内存极少，但需要迭代才能得到值。
 
 可写，但不推荐太复杂（降低可读性），多层循环时最好改成普通 for 或函数。
-列表推导式中的变量不会泄露到外部作用域， 生成器表达式也不会泄露
+Python 3 中,列表推导式/生成器表达式中的变量不会泄露到外部作用域，但 Python 2 会泄露
+
+
+## 实例方法、类方法、静态方法有什么区别？分别在什么场景使用？
+## 为什么 @classmethod 能用来创建 alternative constructors？
+## @staticmethod 到底有什么用？为什么不用普通函数？
+## 类方法和静态方法在继承（Inheritance）中有什么行为差异？
+## 类方法是不是可以当作实例方法使用？为什么实例方法不能作为类方法？
+
+区别：
+（参数，绑定到谁，装饰器，场景）
+实例方法第一个参数是self, 绑定到实例对象，函数内部访问实例属性。
+类方法第一个参数是cls, 绑定到类对象，需要@classmethod装饰器，常用于创建工厂函数。
+静态方法的第一个参数不用传特定参数，完全不绑定，需要@staticmethod装饰器，它是类相关的工具函数，无需访问类或实例。
+
+创建 替代构造函数： 因为@classmethod接受到的是类对象本身(cls)，因此可以返回该类新实例
+并且支持继承，子类调用时，cls 是子类，而不是父类
+```
+@classmethod
+def from_json(cls, data):
+    return cls(**json.loads(data))
+```
+静态方法是“放在类里的工具函数”，作用是结构化代码，而不是绑定行为。
+
+继承中行为差异：
+            最核心区别：类方法会动态绑定，静态方法不会。
+```
+class A:
+    @classmethod
+    def who(cls):
+        return cls.__name__
+
+class B(A):
+    pass
+
+B.who() 
+# 返回 "B" —— 说明类方法支持继承派发
+```
+
+类方法没有依赖实例状态，因此实例调它是合法且安全的。(类方法绑定到类，不依赖实例实例, 调用它不会注入 self；Python 仍然只会传入 cls，所以可以正常调用。)
+实例方法依赖实例状态，因此如果从类调用，它没有 self 会报错。
+```
+class A:
+    @classmethod
+    def cm(cls):
+        pass
+
+    def im(self):
+        pass
+
+a = A()
+a.cm()     # ✔ 可以，cls 被绑定为 A
+A.im()     # ❌ 不行，缺少 self
+```
+
+
+## Python 的异常处理模型是什么？try / except / else / finally 的执行顺序如何？
+## Python 的异常是如何传播的？什么是 traceback？
+## 如何自定义异常？为什么应该继承自 Exception 而不是 BaseException？
+## raise 的不同使用方式是什么？raise, raise e, raise from 有什么区别？
+## 内置异常体系结构是什么？应该如何设计自定义异常层级？
+
+异常模型： 使用 结构化异常处理
+当代码运行发生异常时，会构造一个 Exception 对象；
+Python 解释器会在当前作用域寻找匹配的 except 块； 
+如找不到，会继续向上层调用栈传播；
+最终若到达顶层仍未处理，则程序终止并输出 traceback
+
+执行顺序：
+```
+try:
+    # 可能抛异常
+except:
+    # 处理异常
+else:
+    # try 中无异常时执行
+finally:
+    # 无论是否有异常都执行
+```
+
+1. 执行 try 块
+2. 如果发生异常 → 跳过剩余的 try
+3. 匹配对应的 except 执行
+4. 如果 try 内没有异常 → 执行 else
+5. 无论有没有异常 → 最后执行 finally
+
+异常如何传播：
+ 异常会沿着 调用栈向上冒泡：
+- 当前函数未处理 → 交给调用它的函数
+- 调用者也未处理 → 再上层
+- 一直到进入主程序
+如果仍无人处理 → 程序退出并打印 traceback。
+
+
+traceback:  是Python在异常终止时输出的, 是异常传播链的可视化输出, 它会指出出现异常的准确代码位置
+```
+Traceback (most recent call last):
+  File "a.py", line 10, in <module>
+    foo()
+  File "a.py", line 6, in foo
+    1 / 0
+ZeroDivisionError: division by zero
+```
+
+如何自定义异常：
+
+自定义异常一般继承自 Exception：
+```
+class InvalidUserInput(Exception):
+    pass
+```
+
+为什么不继承自BaseException：
+BaseException 只为“系统级异常”准备，这些异常 不应被普通 except 捕获，否则无法终止程序、无法退出解释器。
+应用层异常应继承 Exception， 系统级异常才继承 BaseException。
+
+raise：重新抛出当前异常（保持原 traceback）
+```
+try:
+    ...
+except:
+    raise   # 原样抛出
+```
+
+raise e: 抛出一个新的异常对象（traceback 可能从这里重新开始）
+```
+except Exception as e:
+    raise e   # 不推荐
+```
+
+raise from: 用于**异常链**, 表明 A 异常是由 B 异常导致的。
+输出会同时包含两个异常： The above exception was the direct cause of the following exception:
+**推荐用法**：在封装库时，不暴露底层异常而保留上下文。
+```
+try:
+    int("abc")
+except ValueError as e:
+    raise TypeError("Type conversion failed") from e
+```
+
+内置异常体系结构：
+```
+BaseException
+ ├── SystemExit
+ ├── KeyboardInterrupt
+ ├── GeneratorExit
+ └── Exception
+       ├── ArithmeticError
+       │     ├── ZeroDivisionError
+       │     └── OverflowError
+       ├── LookupError
+       │     ├── IndexError
+       │     └── KeyError
+       ├── TypeError
+       ├── ValueError
+       ├── RuntimeError
+       ├── OSError
+       └── ...
+```
+可捕获异常都来自 Exception
+BaseException 体系中有一些异常不应屏蔽
+
+设计自定义异常: 
+1. 定义一个包级别的基类
+```
+class AppError(Exception):
+    """Base class for all application-level errors."""
+    pass
+```
+2. 为不同模块/行为定义子类
+```
+class DatabaseError(AppError):
+    pass
+
+class ConfigError(AppError):
+    pass
+
+class ValidationError(AppError):
+    pass
+
+```
+3. 尽量用语义明确的名称
+```
+except AppError:
+    # 捕获所有业务异常
+```
+
+
+## Python 的多线程、多进程、协程的本质区别是什么？分别适合什么场景？
+## Python 多线程为什么无法真正并行？GIL（全局解释器锁）在其中扮演什么角色？
+## multiprocessing 与 threading 的通信方式有什么区别？（Queue/Pipe/Event/Lock 等）
+## 协程（async/await）为什么比线程更“轻量”？协程切换的开销来自哪里？
+## 如何在一个项目中“正确选择”线程、进程、协程？有没有实际的判断标准？
+
+
+
+多线程是 在同一个进程内多个线程共享内存，执行单位是线程，受GIL影响，无法真正的并行。适合I/O 密集型任务
+多进程是 多个独立的进程，各自有独立内存空间，执行单位是进程，可以真正的并行（CPU核心级并行）。适合CPU密集型任务
+协程是 单线程内用户级的"微线程"， 事件循环调度（协作式），是单线程并发，不并行。适合大量 I/O 并发、高并发场景
+
+通信区别： 
+    根本区别：是否共享内存
+    多线程是共享内存，线程间可以共享变量 + Lock 控制，
+    多进程是独立内存，进程通信需要序列化
+
+协程轻量：
+- 协程完全运行在用户态，不需要 OS 参与调度
+- 协程切换只发生在 await I/O 操作时（协作式）
+- 创建和销毁成本极低。一个线程需要 ~1MB 栈空间，一个协程只需要几KB
+
+
+协程切换开销来自：
+- Python 层面的 task 状态机切换
+- 事件循环（event loop）调度
+- 内部 future/promise 状态更新
+- await 转换
+总体成本远小于线程切换（OS 上下文切换）。
+
