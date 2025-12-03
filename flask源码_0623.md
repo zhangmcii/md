@@ -130,11 +130,11 @@ Flask 提供的一些对象是其他对象的代理。每个工作线程都能�
 
 Flask应用对象具有诸如config之类的属性，这些 属性对于在视图和 CLI commands中访问很有用。但是，
 
-1. 在项目中的模块内导入 `app` 实例容易导致循环导入问题。
+1. 在项目中的模块内导入`app`实例容易导致循环导入问题。
 
-2. 当使用 [应用程序工厂方案](https://dormousehole.readthedocs.io/en/latest/patterns/appfactories.html)或编写可重用的 [blueprints](https://dormousehole.readthedocs.io/en/latest/blueprints.html) 或 [extensions](https://dormousehole.readthedocs.io/en/latest/extensions.html) 时， 根本不会有应用程序实例导入。
+2. 当使用应用程序工厂方案或编写可重用的蓝图或扩展时， 根本不会有应用程序实例导入。
 
-Flask 通过 *应用上下文* 解决了这个问题。不是直接引用一个 `app` ，而是使用 [`current_app`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.current_app "flask.current_app") 代理，该代理指向处理当前活动的应用。
+Flask 通过*应用上下文*解决了这个问题。不是直接引用一个`app`，而是使用[`current_app`]代理，该代理指向处理当前活动的应用。
 
 处理请求时， Flask 自动 *推送* 应用上下文。在请求期间运行的视图函数、错误 处理器和其他函数将有权访问 [`current_app`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.current_app "flask.current_app") 。
 
@@ -171,7 +171,7 @@ Flask 通过 *应用上下文* 解决了这个问题。不是直接引用一�
 
 ### 存储数据：
 
-应用上下文是在请求和CLI命令期间存储公共数据的好地方（比如在app变量中存储数据），FLask提供类g对象，与应用上下文具有相同的生命周期。
+应用上下文是在请求和CLI命令期间存储公共数据的好地方（比如在app变量中存储数据），FLask提供类g对s象，与应用上下文具有相同的生命周期。
 
 > `g` 中的数据在应用上下文结束后丢失，因此它不是在请求之间存储数据的恰当位置。使用 [`session`](https://dormousehole.readthedocs.io/en/latest/api.html#flask.session "flask.session") 或数据库跨请求存储数据。
 
@@ -311,12 +311,12 @@ Flask扩展通常分为两类：一类是纯功能的实现，比如提供用户
 
 代理对象的指向堆栈顶部项目的信息：线程1中的request指向RequestCtx_A，线程2中的request指向RequestCtx_B，以此类推。
 
-> 注意，在Flask中，Local类的实例是全局共享的，它内部维护的存储是**按线程 / 协程隔离**的。这是理解上下文机制的关键。
+> 注意，在Flask中，Local类的实例是全局共享的，它内部维护的存储是按线程 / 协程隔离的。这是理解上下文机制的关键。
 > 
 > **源码证据**：
 > 
-> - `_request_ctx_stack` 和 `_app_ctx_stack` 都是全局单例。
-> - 这些栈内部使用同一个 `Local` 实例来存储数据。
+> - `_request_ctx_stack`和`_app_ctx_stack`都是全局单例。
+> - 这些栈内部使用同一个`Local`实例来存储数据。
 
 ### 原始疑问：
 
