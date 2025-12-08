@@ -46,12 +46,29 @@ Session = SQL 操作的暂存区
 直到 commit 才真正写入数据库
 
 ② 什么时候需要 add()？
-当对象第一次被加入会话时需要 add（new state）
-修改已有对象不需要 add（dirty state 自动追踪）
+- 当对象第一次被加入会话时需要 add（new state）
+> 比如：新建对象（transient）
+        c = Comment(text="hi")
+        db.session.add(c)
+
+- 修改已有对象不需要 add（dirty state 自动追踪）
+> 不需要 add 的情况:
+    1.查询得到的对象
+    2.修改任何字段
+    3.删除对象（使用 delete）
+        post = Post.query.get(3)
+        db.session.delete(post)
+        db.session.commit()      
+    4.批量更新中被加载的对象
+    5.flush / commit 中自动处理关系，不需要 add
+        user = User.query.get(1)        # persistent
+        new_post = Post(title="Hello")  # transient
+        user.posts.append(new_post)     # new_post 自动加入 session
+        db.session.commit()             # 自动 INSERT user + post
 
 ③ commit / flush / rollback 的区别
-flush
-将 SQL 语句发送到数据库，但不提交事务
+flush： 获该行数据得数据库生成的主键（比如自增 id）。
+执行 SQL 语句， 但不提交
 可能自动触发（执行 query 时）
 rollback 依然有效
 
@@ -66,7 +83,7 @@ rollback
 
 🎯 ④ 一句话总结（强记）
 add：把对象纳入会话  
-flush：发 SQL，不提交  
+flush：执行 SQL，不提交   
 commit：提交（会自动 flush）  
 rollback：撤销未提交的事务
 
@@ -166,3 +183,48 @@ def get_posts_by_user_id(user_id):
     )
 
 ```
+
+
+
+
+
+优化示例：
+1.
+```
+u = User(
+    email=current_app.config["FLASKY_ADMIN"],
+    username="zmc",
+    password="zmc",
+    name="追梦少年",
+    location="上海",
+    about_me="随便说点啥...",
+)
+db.session.add(u)     // 改为db.session.flush()
+db.session.commit()
+
+# 添加管理员的文章到post表
+u1 = User.query.filter_by(username="zmc").first()    // 删除
+p = Post(body=fake.text(), timestamp=fake.past_date(), author=u1)
+db.session.add(p)       // 删除
+db.session.commit()
+```
+
+
+1.第一处commit改为db.session.flush()，并且去掉后面的User.query.xxxxx
+    为什么可以一次 commit？
+    因为：
+    ✔ flush() 会执行 SQL
+    让 u 获得数据库生成的主键（比如自增 id）。
+    ✔ 事务仍然开启
+    flush() 不会提交，只会把 pending 对象写入数据库。
+    ✔ 你已经有了 u 对象
+    没必要再 User.query.xxxxx 去查一次。
+2.去掉第二处的db.session.add()
+    在 SQLAlchemy 中：
+    当你创建一个对象 p = Post(..., author=u)，并把它关联到一个已经在 session 中的对象 u 时：  等价于你写了 u.posts.append(p)
+    ✔ SQLAlchemy 会自动把 p 视为“脏对象”
+    也就是自动加入 session。
+
+    满足自动加入 session 的条件:
+    1.u 已在 session 中
+    2.你创建 p 时设置了 relationship 字段 author=u
