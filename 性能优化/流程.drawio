@@ -1,0 +1,73 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" version="29.2.4">
+  <diagram name="第 1 页" id="opKYbIZOPWmoSKCuGV6d">
+    <mxGraphModel dx="789" dy="519" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-57" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;用户浏览器&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="230" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-58" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Nginx&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="150" x="215" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-59" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Guniorn + eventlet&lt;br&gt;app:app (Flask)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="180" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-60" parent="1" style="whiteSpace=wrap;html=1;aspect=fixed;" value="Mysql" vertex="1">
+          <mxGeometry height="100" width="100" x="120" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-61" parent="1" style="whiteSpace=wrap;html=1;aspect=fixed;" value="&lt;font style=&quot;font-size: 14px;&quot;&gt;Redis&lt;/font&gt;&lt;div&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;span style=&quot;font-size: 14px; background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;--cache&lt;/span&gt;&lt;/div&gt;&lt;font style=&quot;font-size: 14px;&quot;&gt;--celery broker&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="130" width="130" x="330" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-62" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;&amp;nbsp; - async tasks &lt;br&gt;(消息通知，发邮件，定时删除)&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;&amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="240" x="294" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-64" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="260" y="80" as="sourcePoint" />
+            <mxPoint x="260" y="130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-65" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="https" vertex="1">
+          <mxGeometry height="30" width="60" x="180" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-66" edge="1" parent="1" style="endArrow=classic;startArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="330" y="130" as="sourcePoint" />
+            <mxPoint x="330" y="80" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-67" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Websocket" vertex="1">
+          <mxGeometry height="30" width="60" x="320" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-68" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="244.5" y="200" as="sourcePoint" />
+            <mxPoint x="244.5" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-69" edge="1" parent="1" style="endArrow=classic;startArrow=classic;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="314.5" y="250" as="sourcePoint" />
+            <mxPoint x="314.5" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-72" parent="1" style="strokeWidth=2;html=1;shape=mxgraph.flowchart.annotation_2;align=left;labelPosition=right;pointerEvents=1;direction=south;" value="" vertex="1">
+          <mxGeometry height="70" width="235" x="162.5" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-73" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Flask app (轻量api,鉴权，写数据库)" vertex="1">
+          <mxGeometry height="30" width="240" x="260" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-74" edge="1" parent="1" style="endArrow=none;html=1;rounded=0;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="395" y="590" as="sourcePoint" />
+            <mxPoint x="394.5" y="525" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="oAfxHHCVzRbWChvK_ZIG-75" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Celery&amp;nbsp; workers (多个实例)" vertex="1">
+          <mxGeometry height="30" width="210" x="370" y="540" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
