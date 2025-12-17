@@ -48,7 +48,7 @@
 
 
 换压测工具wrk
-测试命令： wrk -t4 -c50 -d10s https://xxx.com/api/api/v1/posts
+测试命令： wrk -t4 -c50 -d10s https://191718.com/api/api/v1/posts
 结果
 ```
 Running 10s test @ https://xxx.com/api/api/v1/posts
@@ -69,6 +69,8 @@ Latency Avg: 1.06s
 Max: 2.00s
 timeout: 16
 ```
+
+
 
 这说明：
 - 平均一个请求要 1 秒
@@ -145,4 +147,14 @@ COPY flasky_socketio.py ./
 ...
 ```
 
+wrk -t4 -c50 -d30s https://191718.com/api/api/v1/posts
+Running 30s test @ https://191718.com/api/api/v1/posts
+  4 threads and 50 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   967.50ms  215.21ms   1.98s    88.27%
+    Req/Sec    13.32      9.68    60.00     81.62%
+  1282 requests in 30.03s, 344.29KB read
+  Socket errors: connect 0, read 0, write 0, timeout 20
+Requests/sec:     42.70
+Transfer/sec:     11.47KB
 
