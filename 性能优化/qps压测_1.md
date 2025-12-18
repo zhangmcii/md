@@ -168,3 +168,6 @@ flask_app = create_app(os.getenv("FLASK_CONFIG") or "default")
 celery_app = flask_app.extensions["celery"]
 ```
 celery是用主应用实例来实例化的，而我们又在WS的注册事件中引入了celery，主应用和WS服务是两个独立的进程，这样执行celery任务正确吗
+
+
+完结。已解决主应用与socketio分离

@@ -1,3 +1,5 @@
+# 找影响qps的根因
+
 背景： 云服务器是4核，内存4GB，带宽是3Mbps
 网站： vue+flask,   nginx已开启Nginx + gzip 
 	   启动gunicorn -b :5000 --worker-class eventlet -w 4 - - flasky:app
@@ -158,3 +160,28 @@ Running 30s test @ https://191718.com/api/api/v1/posts
 Requests/sec:     42.70
 Transfer/sec:     11.47KB
 
+
+**主应用，socketio分离**：
+
+wrk -t4 -c50 -d30s https://191718.com/api/api/v1/posts
+Running 10s test @ https://191718.com/api/api/v1/posts
+  4 threads and 50 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.44s   360.72ms   1.93s    76.92%
+    Req/Sec     3.95      4.46    20.00     79.73%
+  88 requests in 10.07s, 23.20KB read
+  Socket errors: connect 0, read 0, write 0, timeout 75
+Requests/sec:      8.74
+Transfer/sec:      2.30KB
+
+
+
+Running 10s test @ https://191718.com/api/api/v1/posts
+  4 threads and 50 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     1.22s   381.63ms   1.63s    83.33%
+    Req/Sec     4.54      6.23    30.00     91.18%
+  87 requests in 10.07s, 22.94KB read
+  Socket errors: connect 0, read 0, write 0, timeout 75
+Requests/sec:      8.64
+Transfer/sec:      2.28KB
