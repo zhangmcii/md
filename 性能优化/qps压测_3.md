@@ -91,3 +91,31 @@ ok，现在用户发布了一篇markdown文章，把原始字符存入body字段
 其他页总时间在60ms左右， 第一页在90ms左右
 优化后的效果简直立竿见影！！！
 
+
+wrk -t4 -c50 -d10s https://191718.com/api/api/v1/posts
+Running 10s test @ https://191718.com/api/api/v1/posts
+  4 threads and 50 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency   612.55ms  437.92ms   1.97s    69.30%
+    Req/Sec    15.37      9.07    49.00     72.35%
+  551 requests in 10.10s, 2.66MB read
+  Socket errors: connect 0, read 0, write 0, timeout 26
+Requests/sec:     54.54
+Transfer/sec:    269.80KB
+
+
+
+对比之前的：
+QPS：8.6 → 56.1（≈ 6.5 倍提升）
+下载量：2.28KB/s → 277KB/s
+
+首页“慢”的主因已经被解决
+
+在 4C / 4G / 3Mbps 的云服务器上：
+56 QPS 对一个 Flask + SQLAlchemy + 云对象存储图片的首页接口，是一个“合理且健康”的结果
+
+
+
+
+
+
