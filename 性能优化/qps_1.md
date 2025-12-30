@@ -77,7 +77,7 @@ for post in posts:
 
 **后果：** 10 篇文章，执行了 1 + （1 + 1 + 1）* 10 = 31条 SQL。
 
-**✅ 优化方案：预加载 (Eager Loading)**
+** 优化方案：预加载 (Eager Loading)**
 使用 SQLAlchemy 的 `joinedload` 或 `subqueryload`，在第一条 SQL 就把关联数据抓回来。
 
 ```python
@@ -95,7 +95,7 @@ posts = Post.query.options(joinedload(Post.author))\
 **误区：** 很多人认为 Eventlet/Gevent 是“高并发神器”。
 **真相：** Eventlet 适合 **I/O 密集且全异步** 的场景（如 WebSocket、长轮询）。但我的接口里包含大量 **同步阻塞** 操作（标准 SQLAlchemy 查询、JSON 序列化、JWT 运算）。在这种场景下，异步 Worker 并不比同步 Worker 强，甚至因为上下文切换导致更慢。
 
-**✅ 优化方案：分离服务**
+** 优化方案：分离服务**
 
 * **主 API (HTTP)：** 改回同步 Worker (`-w 8`)，处理传统的 CRUD 请求更稳。
 * **Socket.IO 服务：** 保持使用 Eventlet，专门处理即时通讯。
@@ -106,7 +106,7 @@ posts = Post.query.options(joinedload(Post.author))\
 
 这个 HTTP 请求可能耗时 200ms~1s。**这意味着：用户只是想看个首页，我却让他等我查完 IP 归属地再进门。**
 
-**✅ 优化方案：异步任务**
+** 优化方案：异步任务**
 将耗时操作丢给 Celery 消息队列。
 
 ```python
@@ -130,7 +130,7 @@ def async_log_visitor(ip):
 * **现象：** 首页请求下载内容耗时高达 **524ms**。
 * **原因：** 传输了大量无用数据，占满了 3Mbps 的带宽。
 
-**✅ 优化方案：字段截取**
+** 优化方案：字段截取**
 后端 SQL 查询时只取摘要。
 
 ---
