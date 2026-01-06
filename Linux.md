@@ -182,9 +182,6 @@ echo "alias ll='ls -l'" >> ~/.zshrc
 source ~/.zshrc
 
 
-<div align="center"> <img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/1e46fd03-0cda-4d60-9b1c-0c256edaf6b2.png" width="450px"> </div><br>
-
-
 ```
 ## ln [-sf] source_filename dist_filename
 -s ：默认是实体链接，加 -s 为符号链接
@@ -327,7 +324,6 @@ find . -mtime -7
 
 +4、4 和 -4 的指示的时间范围如下：
 
-<div align="center"> <img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/658fc5e7-79c0-4247-9445-d69bf194c539.png" width=""/> </div><br>
 
 **② 与文件拥有者和所属群组有关的选项**  
 
