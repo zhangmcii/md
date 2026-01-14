@@ -663,7 +663,7 @@ bool isBalanced(BiTree root){
 ``` python
 # path用来记录路径
 def traversal(self, cur, path, result):
-    path.append(cur.val)  # 中
+    path.append(cur.val)
     if not cur.left and not cur.right:  # 到达叶子节点
         sPath = '->'.join(map(str, path))
         result.append(sPath)
@@ -682,6 +682,36 @@ def binaryTreePaths(self, root):
         return result
     self.traversal(root, path, result)
     return result
+```
+
+标准写法：
+```python
+# 先序遍历
+def binaryTreePaths_obvious(self, root):
+        res = []
+        path = []  # 共享的列表
+
+        def backtrack(node):
+            if not node:
+                return
+            
+            # 1. 做选择：把当前节点加入路径
+            path.append(str(node.val))
+            
+            # 如果是叶子节点，记录结果
+            if not node.left and not node.right:
+                res.append("->".join(path))
+            else:
+                # 2. 递归：去探索左边和右边
+                if node.left: backtrack(node.left)
+                if node.right: backtrack(node.right)
+            
+            # 3. 撤销选择：这就是【回溯】！
+            path.pop() 
+
+        backtrack(root)
+        return res
+
 ```
 
 
@@ -753,3 +783,92 @@ TreeNode* searchBST(TreeNode* root, int val) {
     return NULL;
 }
 ```
+
+
+## 给定一个多叉树，每个节点存储两个属性：runtime，memory。现在计算每个节点到根节点的路径上的各属性之和
+
+核心思路:
+我们需要在遍历的过程中，把父节点传下来的“历史总和”加上“当前节点的值”，算出当前的总和，然后分别存起来，再传给子节点。
+
+
+多叉树的深度遍历(先序遍历)
+```python
+from typing import List, Dict
+
+# 1. 定义多叉树节点
+class Node:
+    def __init__(self, name: str, runtime: int, memory: int, children: List['Node'] = None):
+        self.name = name        # 节点名称（用来标识）
+        self.runtime = runtime  # 属性1
+        self.memory = memory    # 属性2
+        self.children = children if children else []
+
+class Solution:
+    def calcPathSums(self, root: 'Node') -> Dict[str, dict]:
+        # 结果字典：Key是节点名, Value是该节点到根节点的累加属性
+        results = {}
+        
+        if not root:
+            return results
+
+        # DFS 递归函数
+        # node: 当前节点
+        # acc_runtime: 从根节点到父节点的 runtime 之和
+        # acc_memory: 从根节点到父节点的 memory 之和
+        def dfs(node, acc_runtime, acc_memory):
+            if not node:
+                return
+            
+            # 1. 计算当前节点的路径总和 (父级累加 + 当前值)
+            current_total_runtime = acc_runtime + node.runtime
+            current_total_memory = acc_memory + node.memory
+            
+            # 2. 记录结果
+            # 这里我们记录了每一个节点的路径和，不仅仅是叶子节点
+            results[node.name] = {
+                "total_runtime": current_total_runtime,
+                "total_memory": current_total_memory
+            }
+            
+            # 3. 递归遍历所有子节点
+            # 将刚才计算好的 current_total 传给孩子
+            for child in node.children:
+                dfs(child, current_total_runtime, current_total_memory)
+        
+        # 初始调用：累加器从 0 开始
+        dfs(root, 0, 0)
+        
+        return results
+
+# --- 测试代码 ---
+if __name__ == "__main__":
+    # 构建多叉树结构
+    #        Root (10, 100)
+    #       /             \
+    #    A (5, 50)       B (2, 20)
+    #    /     \           |
+    # A1(1,10) A2(3,30)  B1(4,40)
+
+    # 创建节点
+    root = Node("Root", 10, 100)
+    node_a = Node("A", 5, 50)
+    node_b = Node("B", 2, 20)
+    node_a1 = Node("A1", 1, 10)
+    node_a2 = Node("A2", 3, 30)
+    node_b1 = Node("B1", 4, 40)
+
+    # 建立连接关系
+    root.children = [node_a, node_b]
+    node_a.children = [node_a1, node_a2]
+    node_b.children = [node_b1]
+
+    # 计算
+    sol = Solution()
+    path_sums = sol.calcPathSums(root)
+
+    # 打印结果
+    for name, data in path_sums.items():
+        print(f"节点 {name}: {data}")
+```
+
+关键点： 这里不需要像`二叉树返回所有从根节点到叶子节点的路径`那样维护一个 path 列表然后 pop() 回溯。因为我们传递的是数字（整数）。 在 Python 中，整数是不可变的。当我们把 current_sum + node.val 传给下一层递归时，下一层拿到了新的值，而当前层的变量并没有改变。当递归返回时，当前层的数值依然保持原样，自然就完成了“回溯”的效果。
