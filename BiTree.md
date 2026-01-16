@@ -785,90 +785,88 @@ TreeNode* searchBST(TreeNode* root, int val) {
 ```
 
 
-## 给定一个多叉树，每个节点存储两个属性：runtime，memory。现在计算每个节点到根节点的路径上的各属性之和
+## 给定一个二叉树和一个目标和，判断该树中是否存在根节点到叶子节点的路径，这条路径上所有节点值相加等于目标和。
 
-核心思路:
-我们需要在遍历的过程中，把父节点传下来的“历史总和”加上“当前节点的值”，算出当前的总和，然后分别存起来，再传给子节点。
+说明: 叶子节点是指没有子节点的节点。
 
+示例: 给定如下二叉树，以及目标和 sum = 22
+![图片12](https://file1.kamacoder.com/i/algo/20230407210247.png)
 
-多叉树的深度遍历(先序遍历)
+返回 true, 因为存在目标和为 22 的根节点到叶子节点的路径 5->4->11->2。
+
+思路：先序遍历(深度优先)，对每个节点累加数值。到叶子节点时对比目标值，若相等，设置标志，退出递归
+它此题需要用path列表来记录路径，又要使用数字进行累加判断
 ```python
-from typing import List, Dict
+def seach_path(root, target):
+    if not root:
+        return False
 
-# 1. 定义多叉树节点
-class Node:
-    def __init__(self, name: str, runtime: int, memory: int, children: List['Node'] = None):
-        self.name = name        # 节点名称（用来标识）
-        self.runtime = runtime  # 属性1
-        self.memory = memory    # 属性2
-        self.children = children if children else []
+    result = []
+    path = []
+    is_eq = False
+   
+    def travel(node, path, result, sum):
+        if not node:
+            return
+        nonlocal is_eq
+        if is_eq:
+            return 
+        sum += node.value
+         path.append(str(node.value))
+        if not node.left and not node.right:
+            is_eq = sum == target
+            if is_eq:
+                result.append('->'.join(path))
+        else:
+            if node.left:
+                travel(node.left, path, result, sum)
+            if node.right:
+                travel(node.right, path, result, sum)
+        path.pop()
 
-class Solution:
-    def calcPathSums(self, root: 'Node') -> Dict[str, dict]:
-        # 结果字典：Key是节点名, Value是该节点到根节点的累加属性
-        results = {}
-        
-        if not root:
-            return results
+    travel(root, path, result, 0)
+    return True if result else False
 
-        # DFS 递归函数
-        # node: 当前节点
-        # acc_runtime: 从根节点到父节点的 runtime 之和
-        # acc_memory: 从根节点到父节点的 memory 之和
-        def dfs(node, acc_runtime, acc_memory):
-            if not node:
-                return
-            
-            # 1. 计算当前节点的路径总和 (父级累加 + 当前值)
-            current_total_runtime = acc_runtime + node.runtime
-            current_total_memory = acc_memory + node.memory
-            
-            # 2. 记录结果
-            # 这里我们记录了每一个节点的路径和，不仅仅是叶子节点
-            results[node.name] = {
-                "total_runtime": current_total_runtime,
-                "total_memory": current_total_memory
-            }
-            
-            # 3. 递归遍历所有子节点
-            # 将刚才计算好的 current_total 传给孩子
-            for child in node.children:
-                dfs(child, current_total_runtime, current_total_memory)
-        
-        # 初始调用：累加器从 0 开始
-        dfs(root, 0, 0)
-        
-        return results
-
-# --- 测试代码 ---
-if __name__ == "__main__":
-    # 构建多叉树结构
-    #        Root (10, 100)
-    #       /             \
-    #    A (5, 50)       B (2, 20)
-    #    /     \           |
-    # A1(1,10) A2(3,30)  B1(4,40)
-
-    # 创建节点
-    root = Node("Root", 10, 100)
-    node_a = Node("A", 5, 50)
-    node_b = Node("B", 2, 20)
-    node_a1 = Node("A1", 1, 10)
-    node_a2 = Node("A2", 3, 30)
-    node_b1 = Node("B1", 4, 40)
-
-    # 建立连接关系
-    root.children = [node_a, node_b]
-    node_a.children = [node_a1, node_a2]
-    node_b.children = [node_b1]
-
-    # 计算
-    sol = Solution()
-    path_sums = sol.calcPathSums(root)
-
-    # 打印结果
-    for name, data in path_sums.items():
-        print(f"节点 {name}: {data}")
 ```
 
-关键点： 这里不需要像`二叉树返回所有从根节点到叶子节点的路径`那样维护一个 path 列表然后 pop() 回溯。因为我们传递的是数字（整数）。 在 Python 中，整数是不可变的。当我们把 current_sum + node.val 传给下一层递归时，下一层拿到了新的值，而当前层的变量并没有改变。当递归返回时，当前层的数值依然保持原样，自然就完成了“回溯”的效果。
+上面的做法 去累加然后判断是否等于目标和，那么代码比较麻烦。
+我们可以用递减来优化代码：让计数器count初始为目标和，然后每次减去遍历路径节点上的数值。
+
+
+可以精简
+
+
+# 给定一个二叉树和一个目标和，找到所有从根节点到叶子节点路径总和等于给定目标和的路径。
+说明: 叶子节点是指没有子节点的节点。
+
+示例: 给定如下二叉树，以及目标和 sum = 22，
+![图片13](https://file1.kamacoder.com/i/algo/20210203160854654.png)
+
+```python
+def seach_path(root, target):
+
+    result = []
+    path = []
+    
+     if not root:
+        return result
+   
+    def travel(node, path, result, sum):
+        if not node:
+            return
+        sum += node.value
+        path.append(str(node.value))
+        if not node.left and not node.right:
+            if sum == target:
+                # 注意，这里不能写result.append(path)。path是可变对象，会导致结果为空。我们这里需要传递它的副本
+                result.append([item for item in path])
+        else:
+            if node.left:
+                travel(node.left, path, result, sum)
+            if node.right:
+                travel(node.right, path, result, sum)
+        path.pop()
+
+    travel(root, path, result, 0)
+    return result
+```
