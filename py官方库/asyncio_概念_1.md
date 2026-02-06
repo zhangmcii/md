@@ -59,7 +59,7 @@ async def plant_a_tree():
     # 与植树相关的其他指令。
     ...
 ```
-await dig_the_hole_task 这条指令会将一个回调函数（用于恢复 plant_a_tree() 的执行）添加到 dig_the_hole_task 对象的回调函数列表中。随后，这条指令将控制权交还给事件循环。过一段时间后，事件循环会将控制权传递给 dig_the_hole_task，该任务会完成它需要做的工作。一旦任务结束，它会将它的各种回调函数添加到事件循环中，在这里是恢复 plant_a_tree() 的执行。
+await dig_the_hole_task 这条指令会将一个回调函数（用于恢复 plant_a_tree() 的执行）添加到 dig_the_hole_task 对象的回调函数列表中。随后，这条指令将控制权交还给事件循环。过一段时间后，事件循环会将控制权传递给 dig_the_hole_task，该任务会完成它需要做的工作。`一旦任务结束，它会将它的各种回调函数添加到事件循环中，在这里是恢复 plant_a_tree() 的执行`。
 
 一般来说，当等待的任务完成时 (dig_the_hole_task)，`原先的任务或协程` (plant_a_tree()) 将被添加回事件循环的待办列表以便恢复运行。
 
