@@ -65,11 +65,10 @@ acme.sh --set-default-ca --server letsencrypt
 > **注意：** 请将 `example.com` 换成你的域名，将 `/var/www/html` 换成你 Nginx 配置中的真实静态资源根目录。
 
 ```shell
-acme.sh --issue \
-  -d example.com \
-  -d www.example.com \
-  --webroot /var/www/html/ \
-  --ecc
+acme.sh --issue  -d example.com --webroot /usr/share/nginx/html/ --ecc
+
+# 或者（绑定2个域名）
+acme.sh --issue  -d example.com  -d www.example.com --webroot /usr/share/nginx/html/ --ecc
 
 ```
 
@@ -97,7 +96,7 @@ mkdir -p /etc/nginx/ssl/example.com/
 acme.sh --install-cert -d example.com --ecc \
 --key-file       /etc/nginx/ssl/example.com/key.pem  \
 --fullchain-file /etc/nginx/ssl/example.com/fullchain.pem \
---reloadcmd     "systemctl reload nginx"
+--reloadcmd     "sudo systemctl reload nginx"
 
 ```
 
@@ -182,3 +181,4 @@ crontab -l
 2. **多域名签发**：如果你有多个域名，重复上述步骤即可。`acme.sh` 会非常聪明地管理每一份证书的续期时间。
 
 现在，恭喜！你的网站现在已经拥有了永久的“安全绿锁”。
+
