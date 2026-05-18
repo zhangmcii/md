@@ -54,9 +54,9 @@ typedef int EdgeType;
 
 //邻接矩阵
 typedef struct MGraph {
-    //顶点表
+    //顶点表 （一维数组）
     VertexType vex[MaxVEX];
-    //邻接矩阵，边表
+    //邻接矩阵，边表 （二维数组）
     EdgeType arc[MaxVEX][MaxVEX];
 
     //图中当前的顶点数和边数
@@ -71,7 +71,7 @@ typedef struct MGraph {
 #define VertexType int     // 顶点数据类型（存储节点编号）
 //边表结点
 typedef struct EdgeNode {
-    //邻接点域，存储改顶点对应的下标
+    //邻接点域，存储该顶点对应的下标
     int adjvex;
     //链域，指向下一个邻接点
     struct EdgeNode *next;

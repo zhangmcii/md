@@ -84,64 +84,7 @@ int* levelOrder(BiTree *root, int *returnSize) {
 队头和队尾计算环形下标，保证不越界： front = (front + 1) % size       rear = (rear + 1) % size
 元素个数：(rear - front + size) % size
 
-# define MaxSize 100
-# define QueueSize 200
-typedef struct {
-    int data[MaxSize];
-    int front;
-    int rear;
-}*Queue;
-
-void InitQueue(Queue Q){
-    Q->data = (BiTree*)malloc(sizeof(BiTree) * QueueSize);
-    Q.front = 0;
-    Q.rear = 0;
-}
-
-bool IsEmpty(Queue Q){
-    if(Q.rear == Q.front){
-        return true;
-    }
-    return false;
-}
-
-bool IsFull(Queue Q){
-    if((Q.rear + 1) % size = Q.front){
-        return true;
-    }
-    return false;
-}
-
-int count(Queue Q){
-    return (Q.rear - Q.front + size) % size
-}
-
-bool EnQueue(Queue Q, BiTree q){
-    if(IsFull()){
-        return false;
-    }
-    Q.data[Q.rear] = q;
-    Q.rear = (Q.rear + 1) % size
-    return true;
-}
-
-bool DeQueue(Queue Q, BiTree &q){
-     if(IsEmpty()){
-        return false;
-     }
-     q = Q.data[Q.front];
-     Q.front = (Q.front + 1) % size;
-     return true;
-}
-
-二叉树节点定义：
-```
-typedef int ElemType；
-typedef struct{
-    ElemType data;
-    struct BiNode *lchild, *rchild;
-}BiNode, *BiTree;
-```
+具体代码结构见 [BiTree_base.md](BiTree_base.md)
 
 ## 给定一个二叉树，返回其节点值自底向上的层次遍历。 （即按从叶子节点所在层到根节点所在的层，逐层从左向右遍历）
 思路: 相对于二叉树的层序遍历，就是最后把result数组反转一下就可以了。
@@ -185,7 +128,7 @@ class Solution:
 
 ## 给定一个非空二叉树, 返回一个由每层节点平均值组成的数组。
 ![题目3](https://file1.kamacoder.com/i/algo/20210203151350500.png)
-思路： 对在队列中的元素取评论值即可
+思路： 对在队列中的元素取平均值即可
 卡点： 一层的结束
 ```
 def average(Queue Q, BiTree T)(){
@@ -259,7 +202,7 @@ struct Node {
 填充它的每个 next 指针，让这个指针指向其下一个右侧节点。如果找不到下一个右侧节点，则将 next 指针设置为 NULL。
 初始状态下，所有 next 指针都被设置为 NULL。
 ![题目5](https://file1.kamacoder.com/i/algo/20210203152044855.jpg)
-思路：对每层的节点进行便利，设置前后指针进行赋值
+思路：对每层的节点进行遍历，设置前后指针进行赋值
 ```
 void levelOrder(BiTree *root) {
     if (root == NULL) return;
@@ -359,7 +302,7 @@ int levelOrder(BiTree *root, int *returnSize) {
 ![题目8](https://file1.kamacoder.com/i/algo/20210203192644329.png)
 思路：只要把每一个节点的左右孩子翻转一下，就可以达到整体翻转的效果。
     使用前序遍历和后序，层序遍历都可以，唯独中序遍历不方便，因为中序遍历会把某些节点的左右孩子翻转了两次！
-卡点：一层又很多的节点，怎么swap()
+卡点：一层有很多的节点，怎么swap()
 
 层序遍历：
 ```
@@ -401,7 +344,9 @@ void pre(BiTree root){
 
 
 ## 给定一个二叉树，找出其最大深度。
-思路：先用后序遍历（左右中）来计算树的高度。
+此题强调 树最深能到哪里，本质是求 **根节点高度**。（所以方法一用的是 后序遍历）
+
+思路：先用后序遍历（左右中）来计算树的高度。 先求它的左子树的深度，再求右子树的深度， 最后取左右深度最大的数值 再+1 
 后序遍历：
 ```
 // 先求它的左子树的深度，再求右子树的深度，
@@ -420,19 +365,18 @@ getdepth(root);
 ```
 void post_depth(BiTree root){
     if(root == NULL) return 0;
-    return 1 + max(post(root->lchild) ,post(root->rchild));
+    return 1 + max(post_depth(root->lchild) ,post_depth(root->rchild));
 }
-post(root);
+post_depth(root);
 ```
 
 或者精简为：(显然没上面精简的好)
 ```
 void post_depth(BiTree root, int depth){
     if(root == NULL) return depth;
-    return max(post(root->lchild, depth+1) ,post(root->rchild, depth+1));
+    return max(post_depth(root->lchild, depth+1) ,post_depth(root->rchild, depth+1));
 }
-post(root, 1);
-
+post_depth(root, 1);
 ```
 
 > 精简之后的代码根本看不出是哪种遍历方式，也看不出递归三部曲的步骤，所以如果对二叉树的操作还不熟练，尽量不要直接照着精简代码来学。
@@ -589,6 +533,8 @@ int countNodes(TreeNode root) {
     if (leftDepth == rightDepth) {
         return (2 << leftDepth) - 1; // 注意(2<<1) 相当于2^2，
     }
+
+    # 否则递归 后序遍历
     return countNodes(root->left) + countNodes(root->right) + 1;
 }
 ```
@@ -610,8 +556,8 @@ int countNodes(TreeNode root) {
 
 这里强调一波概念：
 
-二叉树节点的深度：指从根节点到该节点的最长简单路径边的条数。
-二叉树节点的高度：指从该节点到叶子节点的最长简单路径边的条数。
+二叉树节点的深度：指从根节点到该节点的最长简单路径边的条数。(从根到节点)
+二叉树节点的高度：指从该节点到叶子节点的最长简单路径边的条数。(从叶子到节点)
 但leetcode中强调的深度和高度很明显是按照节点来计算的，如图：
 ![题目10](https://file1.kamacoder.com/i/algo/20210203155515650.png)
 
@@ -647,6 +593,7 @@ bool isBalanced(BiTree root){
 ```
 > 总结
   通过本题可以了解求二叉树深度 和 二叉树高度的差异，求深度适合用前序遍历，而求高度适合用后序遍历。
+  详细见[BiTree_base.md](BiTree_base.md)
 
 
 
@@ -688,30 +635,29 @@ def binaryTreePaths(self, root):
 ```python
 # 先序遍历
 def binaryTreePaths_obvious(self, root):
-        res = []
-        path = []  # 共享的列表
+    res = []
+    path = []  # 共享的列表
 
-        def backtrack(node):
-            if not node:
-                return
-            
-            # 1. 做选择：把当前节点加入路径
-            path.append(str(node.val))
-            
-            # 如果是叶子节点，记录结果
-            if not node.left and not node.right:
-                res.append("->".join(path))
-            else:
-                # 2. 递归：去探索左边和右边
-                if node.left: backtrack(node.left)
-                if node.right: backtrack(node.right)
-            
-            # 3. 撤销选择：这就是【回溯】！
-            path.pop() 
+    def backtrack(node):
+        if not node:
+            return
+        
+        # 1. 做选择：把当前节点加入路径
+        path.append(str(node.val))
+        
+        # 如果是叶子节点，记录结果
+        if not node.left and not node.right:
+            res.append("->".join(path))
+        else:
+            # 2. 递归：去探索左边和右边
+            if node.left: backtrack(node.left)
+            if node.right: backtrack(node.right)
+        
+        # 3. 撤销选择：这就是【回溯】！
+        path.pop() 
 
-        backtrack(root)
-        return res
-
+    backtrack(root)
+    return res
 ```
 
 
@@ -743,6 +689,8 @@ int sumOfLeftLeaves(TreeNode* root) {
     int sum = leftValue + rightValue;               // 中
     return sum;
 }
+
+若root节点左子树不是左叶子，则leftValue = 0
 ```
 
 ## 给定二叉搜索树（BST）的根节点和一个值。 你需要在BST中找到节点值等于给定值的节点。 返回以该节点为根的子树。 如果节点不存在，则返回 NULL。
